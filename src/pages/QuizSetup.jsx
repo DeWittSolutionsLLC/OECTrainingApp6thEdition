@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import SectionPicker from '../components/SectionPicker';
 import { getWeaknessDataSync } from '../hooks/useSession';
+import { getUserWeaknessData } from '../firebase/firebase';
+import { useAuth } from '../context/AuthContext';
 import '../styles/setup.css';
 
 const MODE_META = {
@@ -50,18 +52,46 @@ const MODE_META = {
 export default function QuizSetup() {
   const { mode } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const meta = MODE_META[mode] || MODE_META.quiz;
 
   const [selectedSections, setSelectedSections] = useState(null);
   const [order, setOrder] = useState('random');
   const [count, setCount] = useState(20);
 
-  const weakData = getWeaknessDataSync();
   const isWeakness = mode === 'weakness';
+
+  // Start with a fast localStorage check, then load from Firestore if logged in
+  const [weakData, setWeakData] = useState(() => getWeaknessDataSync());
+  const [weakLoading, setWeakLoading] = useState(isWeakness && !!user);
+
+  useEffect(() => {
+    if (!isWeakness || !user) return;
+    getUserWeaknessData(user.uid)
+      .then(data => setWeakData(data))
+      .catch(() => {})
+      .finally(() => setWeakLoading(false));
+  }, [isWeakness, user]);
 
   function handleStart() {
     const state = { selectedSections, order, count: parseInt(count, 10) };
     navigate(`/${mode}`, { state });
+  }
+
+  if (isWeakness && weakLoading) {
+    return (
+      <div className="setup">
+        <div className="setup__card">
+          <div className="setup__header" style={{ '--mode-color': meta.color }}>
+            <span className="setup__icon">{meta.icon}</span>
+            <h1 className="setup__title">{meta.title}</h1>
+          </div>
+          <div className="setup__empty">
+            <p>Loading your weakness data…</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (isWeakness && weakData.length === 0) {
