@@ -1,5 +1,7 @@
+// pages/Home.jsx  (updated — replaces your existing Home.jsx)
 import { useNavigate } from 'react-router-dom';
-import { getWeaknessData } from '../hooks/useSession';
+import { useAuth } from '../context/AuthContext';
+import { getWeaknessDataSync } from '../hooks/useSession';
 import '../styles/home.css';
 
 const MODES = [
@@ -44,7 +46,7 @@ const MODES = [
     icon: '🔥',
     title: 'Weakness Drill',
     subtitle: 'Target your problem areas',
-    desc: 'Focuses on questions you\'ve historically gotten wrong. Drill until you master them.',
+    desc: "Focuses on questions you've historically gotten wrong. Drill until you master them.",
     color: '#8b5cf6',
     path: '/setup/weakness',
   },
@@ -52,10 +54,32 @@ const MODES = [
 
 export default function Home() {
   const navigate = useNavigate();
-  const weakCount = getWeaknessData().length;
+  const { user, profile } = useAuth();
+
+  // For guests, use sync localStorage check. For users, weakness badge shows from profile.
+  const weakCount = user
+    ? (profile?.totalWrong ?? 0) // rough proxy; accurate count loaded per-mode
+    : getWeaknessDataSync().length;
 
   return (
     <div className="home">
+      {/* Auth nav bar */}
+      <div className="home__nav">
+        {user ? (
+          <button className="home__avatar-btn" onClick={() => navigate('/profile')} title="View profile">
+            {profile?.photoURL
+              ? <img src={profile.photoURL} alt={profile.displayName} className="home__avatar-img" />
+              : <span className="home__avatar-initial">{(profile?.displayName || user.email || 'A')[0].toUpperCase()}</span>
+            }
+            <span className="home__nav-name">{profile?.displayName || 'Profile'}</span>
+          </button>
+        ) : (
+          <button className="home__signin-btn" onClick={() => navigate('/auth')}>
+            Sign In
+          </button>
+        )}
+      </div>
+
       <div className="home__hero">
         <div className="home__hero-bg" aria-hidden="true">
           {Array.from({ length: 18 }).map((_, i) => (
@@ -81,6 +105,15 @@ export default function Home() {
               <span className="home__stat-l">Study Modes</span>
             </div>
           </div>
+          {user && profile && (
+            <div className="home__user-stats">
+              <span>📊 {profile.totalSessions} sessions · {profile.totalCorrect} correct · {
+                profile.totalQuestions > 0
+                  ? Math.round((profile.totalCorrect / profile.totalQuestions) * 100)
+                  : 0
+              }% overall</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -108,6 +141,13 @@ export default function Home() {
           ))}
         </div>
       </div>
+
+      {!user && (
+        <p className="home__guest-note">
+          <span>Signed out — progress saved locally only.</span>
+          <button onClick={() => navigate('/auth')} className="home__guest-link">Sign in to sync →</button>
+        </p>
+      )}
     </div>
   );
 }

@@ -1,47 +1,46 @@
+// pages/Results.jsx  (updated — replaces your existing Results.jsx)
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getSectionColor } from '../data/oecData';
-import { submitLeaderboardEntry } from '../firebase/firebase';
+import { submitLeaderboardEntry, saveSession } from '../firebase/firebase';
+import { useAuth } from '../context/AuthContext';
 import '../styles/results.css';
-
 
 const DEFAULT_DISPLAY_NAME = 'Anonymous';
 
-function getDisplayName() {
-  return localStorage.getItem('oec_display_name') || DEFAULT_DISPLAY_NAME;
+function getDisplayName(profile, user) {
+  return profile?.displayName || user?.displayName || localStorage.getItem('oec_display_name') || DEFAULT_DISPLAY_NAME;
 }
 
-
 export default function Results() {
-
   const { state } = useLocation();
   const navigate = useNavigate();
+  const { user, profile, refreshProfile } = useAuth();
   const [filter, setFilter] = useState('all');
 
   if (!state) { navigate('/'); return null; }
 
   const { answers = [], mode, summary } = state;
   const correct = summary?.correct ?? answers.filter((a) => a.isCorrect).length;
-  const wrong = summary?.wrong ?? answers.filter((a) => !a.isCorrect).length;
-  const total = summary?.total ?? answers.length;
-  const pct = total > 0 ? Math.round((correct / total) * 100) : 0;
-  const grade = pct >= 90 ? 'A' : pct >= 80 ? 'B' : pct >= 70 ? 'C' : pct >= 60 ? 'D' : 'F';
+  const wrong   = summary?.wrong   ?? answers.filter((a) => !a.isCorrect).length;
+  const total   = summary?.total   ?? answers.length;
+  const pct     = total > 0 ? Math.round((correct / total) * 100) : 0;
+  const grade   = pct >= 90 ? 'A' : pct >= 80 ? 'B' : pct >= 70 ? 'C' : pct >= 60 ? 'D' : 'F';
   const gradeColor = pct >= 80 ? '#22c55e' : pct >= 60 ? '#f59e0b' : '#ef4444';
 
   const submittedRef = useRef(false);
-  const defaultName = getDisplayName();
 
   useEffect(() => {
     if (!mode || submittedRef.current) return;
     submittedRef.current = true;
 
-    // Anonymous display name (persisted locally)
-    const name = localStorage.getItem('oec_display_name') || defaultName;
+    const name = getDisplayName(profile, user);
 
-    // Firestore submission
     (async () => {
       try {
+        // Leaderboard entry (all users)
         await submitLeaderboardEntry({
+          uid: user?.uid || null,
           name,
           mode,
           scorePct: pct,
@@ -49,26 +48,28 @@ export default function Results() {
           wrong,
           total,
         });
+
+        // Per-user session history (authenticated only)
+        if (user) {
+          await saveSession(user.uid, { mode, correct, wrong, total, scorePct: pct });
+          await refreshProfile(); // update aggregate stats in context
+        }
       } catch (e) {
-        // Non-blocking: leaderboard should never break the app
-        console.warn('Leaderboard submit failed:', e);
+        console.warn('Post-session save failed:', e);
       }
     })();
-  }, [mode, pct, correct, wrong, total, defaultName]);
-
+  }, [mode, pct, correct, wrong, total, user, profile]);
 
   const modeLabels = { quiz: 'Quiz', practice: 'Practice', speed: 'Speed Round', weakness: 'Weakness Drill' };
-  const modeLabel = modeLabels[mode] || 'Study';
+  const modeLabel  = modeLabels[mode] || 'Study';
 
-  const filtered = filter === 'wrong'
-    ? answers.filter(a => !a.isCorrect)
-    : filter === 'correct'
-    ? answers.filter(a => a.isCorrect)
-    : answers;
+  const filtered =
+    filter === 'wrong'   ? answers.filter((a) => !a.isCorrect) :
+    filter === 'correct' ? answers.filter((a) =>  a.isCorrect) :
+    answers;
 
-  // Group wrong answers by section
   const bySec = {};
-  answers.filter(a => !a.isCorrect).forEach(a => {
+  answers.filter((a) => !a.isCorrect).forEach((a) => {
     const s = a.question.sectionName;
     bySec[s] = (bySec[s] || 0) + 1;
   });
@@ -107,6 +108,10 @@ export default function Results() {
             )}
           </div>
 
+          {user && (
+            <p className="results-saved-note">✓ Session saved to your profile</p>
+          )}
+
           {weakSections.length > 0 && (
             <div className="results-weak-sections">
               <p className="results-weak-sections__label">Most missed sections:</p>
@@ -122,6 +127,9 @@ export default function Results() {
         {/* Actions */}
         <div className="results-actions">
           <button className="results-btn results-btn--home" onClick={() => navigate('/')}>Home</button>
+          {user && (
+            <button className="results-btn results-btn--profile" onClick={() => navigate('/profile')}>My Profile</button>
+          )}
           {mode && <button className="results-btn results-btn--retry" onClick={() => navigate(`/setup/${mode}`)}>Try Again</button>}
           {wrong > 0 && <button className="results-btn results-btn--drill" onClick={() => navigate('/weakness')}>Drill Weak Spots</button>}
         </div>
@@ -132,9 +140,9 @@ export default function Results() {
             <div className="results-review__controls">
               <h2 className="results-review__title">Question Review</h2>
               <div className="results-filter">
-                <button className={`rf-btn ${filter === 'all' ? 'rf-btn--active' : ''}`} onClick={() => setFilter('all')}>All ({answers.length})</button>
+                <button className={`rf-btn ${filter === 'all'     ? 'rf-btn--active' : ''}`} onClick={() => setFilter('all')}>All ({answers.length})</button>
                 <button className={`rf-btn ${filter === 'correct' ? 'rf-btn--active' : ''}`} onClick={() => setFilter('correct')}>Correct ({correct})</button>
-                <button className={`rf-btn ${filter === 'wrong' ? 'rf-btn--active' : ''}`} onClick={() => setFilter('wrong')}>Wrong ({wrong})</button>
+                <button className={`rf-btn ${filter === 'wrong'   ? 'rf-btn--active' : ''}`} onClick={() => setFilter('wrong')}>Wrong ({wrong})</button>
               </div>
             </div>
 
@@ -144,14 +152,14 @@ export default function Results() {
                 return (
                   <div key={i} className={`rr-item ${a.isCorrect ? 'rr-item--correct' : 'rr-item--wrong'}`}>
                     <div className="rr-item__meta">
-                      <span className="rr-item__sec" style={{ color }}> §{a.question.sectionId} {a.question.sectionName}</span>
+                      <span className="rr-item__sec" style={{ color }}>§{a.question.sectionId} {a.question.sectionName}</span>
                       <span className={`rr-item__badge ${a.isCorrect ? 'rr-item__badge--ok' : 'rr-item__badge--err'}`}>
                         {a.isCorrect ? '✓' : '✗'}
                       </span>
                     </div>
                     <p className="rr-item__q">{a.question.text}</p>
                     <div className="rr-item__opts">
-                      {['A','B','C','D'].map(l => (
+                      {['A','B','C','D'].map((l) => (
                         <div key={l} className={`rr-opt ${l === a.question.answer ? 'rr-opt--correct' : l === a.chosen && !a.isCorrect ? 'rr-opt--chosen' : ''}`}>
                           <span className="rr-opt__ltr">{l}</span>
                           <span className="rr-opt__txt">{a.question.choices[l]}</span>

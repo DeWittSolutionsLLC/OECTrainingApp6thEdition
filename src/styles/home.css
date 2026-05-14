@@ -215,3 +215,133 @@
   .home__modes { padding: 36px 16px 60px; }
   .home__grid { grid-template-columns: 1fr; }
 }
+/* === Additions to your existing home.css === */
+/* Paste these at the bottom of styles/home.css */
+
+/* Auth nav bar — sits at top right of the page */
+.home__nav {
+  position: fixed;
+  top: 1rem;
+  right: 1.25rem;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.home__avatar-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  background: rgba(17,24,39,0.85);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 2rem;
+  padding: 0.35rem 0.85rem 0.35rem 0.35rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  backdrop-filter: blur(8px);
+}
+
+.home__avatar-btn:hover {
+  border-color: rgba(59,130,246,0.5);
+  background: rgba(30,41,59,0.9);
+}
+
+.home__avatar-img {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.home__avatar-initial {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.home__nav-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #f1f5f9;
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.home__signin-btn {
+  background: rgba(59,130,246,0.15);
+  border: 1px solid rgba(59,130,246,0.35);
+  border-radius: 2rem;
+  padding: 0.45rem 1.1rem;
+  color: #93c5fd;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  backdrop-filter: blur(8px);
+}
+
+.home__signin-btn:hover {
+  background: rgba(59,130,246,0.25);
+  color: #bfdbfe;
+}
+
+/* User aggregate stats shown in hero when signed in */
+.home__user-stats {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.55);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 2rem;
+  padding: 0.4rem 1rem;
+  display: inline-block;
+}
+
+/* Guest notice at bottom */
+.home__guest-note {
+  text-align: center;
+  font-size: 0.82rem;
+  color: #475569;
+  margin: 0.5rem 0 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.home__guest-link {
+  background: none;
+  border: none;
+  color: #3b82f6;
+  font-size: 0.82rem;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Results page — session saved note */
+.results-saved-note {
+  font-size: 0.82rem;
+  color: #22c55e;
+  margin: 0.5rem 0 0;
+  opacity: 0.8;
+}
+
+/* Results page — profile button */
+.results-btn--profile {
+  background: rgba(59,130,246,0.15);
+  border: 1px solid rgba(59,130,246,0.3);
+  color: #93c5fd;
+}
