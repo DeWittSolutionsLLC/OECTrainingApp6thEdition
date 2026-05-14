@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import SectionPicker from '../components/SectionPicker';
-import { getWeaknessData } from '../hooks/useSession';
+import { getWeaknessDataSync } from '../hooks/useSession';
 import '../styles/setup.css';
 
 const MODE_META = {
@@ -52,11 +52,11 @@ export default function QuizSetup() {
   const navigate = useNavigate();
   const meta = MODE_META[mode] || MODE_META.quiz;
 
-  const [selectedSections, setSelectedSections] = useState([]);
+  const [selectedSections, setSelectedSections] = useState(null);
   const [order, setOrder] = useState('random');
   const [count, setCount] = useState(20);
 
-  const weakData = getWeaknessData();
+  const weakData = getWeaknessDataSync();
   const isWeakness = mode === 'weakness';
 
   function handleStart() {
@@ -129,7 +129,12 @@ export default function QuizSetup() {
           </>
         )}
 
-        <button className="setup__btn" style={{ background: meta.color }} onClick={handleStart}>
+        <button
+          className="setup__btn"
+          style={{ background: meta.color }}
+          disabled={!isWeakness && Array.isArray(selectedSections) && selectedSections.length === 0}
+          onClick={handleStart}
+        >
           Begin {meta.title} →
         </button>
       </div>

@@ -52,10 +52,12 @@ export function shuffle(arr) {
 }
 
 export function getQuestionsBySection(sectionIds) {
-  // empty array = all sections
-  if (!sectionIds || sectionIds.length === 0) {
+  // null/undefined = all sections
+  if (sectionIds === null || sectionIds === undefined) {
     return OEC_DATA.flatMap(s => s.questions);
   }
+  // empty array = no sections selected
+  if (sectionIds.length === 0) return [];
   return OEC_DATA
     .filter(s => sectionIds.includes(s.id))
     .flatMap(s => s.questions);

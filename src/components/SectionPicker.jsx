@@ -2,8 +2,8 @@ import OEC_DATA, { getSectionColor } from '../data/oecData';
 import '../styles/sectionpicker.css';
 
 export default function SectionPicker({ selected, onChange }) {
-  // selected = [] means "all selected"
-  const allSelected = selected.length === 0;
+  // null means "all selected", [] means "none selected"
+  const allSelected = selected === null;
 
   function toggle(id) {
     if (allSelected) {
@@ -13,8 +13,8 @@ export default function SectionPicker({ selected, onChange }) {
       const next = selected.includes(id)
         ? selected.filter(x => x !== id)
         : [...selected, id];
-      // If all are now selected, collapse back to []
-      onChange(next.length === OEC_DATA.length ? [] : next);
+      // If all are now selected, collapse back to null
+      onChange(next.length === OEC_DATA.length ? null : next);
     }
   }
 
@@ -27,14 +27,14 @@ export default function SectionPicker({ selected, onChange }) {
       <div className="sp__header">
         <span className="sp__label">Sections</span>
         <div className="sp__actions">
-          <button className="sp__link" onClick={() => onChange([])}>All</button>
+          <button className="sp__link" onClick={() => onChange(null)}>All</button>
           <span className="sp__dot">·</span>
-          <button className="sp__link" onClick={() => onChange(OEC_DATA.map(s => s.id))}>None</button>
+          <button className="sp__link" onClick={() => onChange([])}>None</button>
         </div>
       </div>
       <div className="sp__grid">
         {OEC_DATA.map((sec) => {
-          const on = allSelected || selected.includes(sec.id);
+          const on = allSelected || (selected && selected.includes(sec.id));
           const color = getSectionColor(sec.id);
           return (
             <button
