@@ -7,7 +7,7 @@ import '../styles/navbar.css';
 export default function NavBar() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { user, loading: authLoading,profile } = useAuth();
+  const { user, loading: authLoading, profile } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const isHome = pathname === '/';
 

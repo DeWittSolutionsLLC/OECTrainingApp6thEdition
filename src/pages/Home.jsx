@@ -54,7 +54,7 @@ const MODES = [
 
 export default function Home() {
   const navigate = useNavigate();
-  
+  const { user, profile } = useAuth();
 
   // For guests, use sync localStorage check. For users, weakness badge shows from profile.
   const weakCount = user
