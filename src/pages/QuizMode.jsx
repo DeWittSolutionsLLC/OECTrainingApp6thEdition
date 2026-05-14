@@ -1,14 +1,26 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import QuestionCard from '../components/QuestionCard';
 import ProgressBar from '../components/ProgressBar';
 import { getQuestionsBySection, shuffle } from '../data/oecData';
-import { getWeaknessData } from '../hooks/useSession';
+import { recordAnswerForUser } from '../firebase/firebase';
+import { useAuth } from '../context/AuthContext';
 import '../styles/quiz.css';
+
+function recordLocalWeakness(question, isCorrect) {
+  const stored = JSON.parse(localStorage.getItem('oec_weakness_data') || '{}');
+  const key = `${question.sectionId}_${question.num}`;
+  if (!stored[key]) stored[key] = { correct: 0, wrong: 0, question };
+  if (isCorrect) stored[key].correct++;
+  else stored[key].wrong++;
+  stored[key].question = question;
+  localStorage.setItem('oec_weakness_data', JSON.stringify(stored));
+}
 
 export default function QuizMode() {
   const { state } = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [session, setSession] = useState([]);
   const [index, setIndex] = useState(0);
@@ -24,7 +36,6 @@ export default function QuizMode() {
     setSession(pool.slice(0, limit));
   }, [state, navigate]);
 
-  // Keyboard shortcuts
   useEffect(() => {
     function onKey(e) {
       const map = { a: 'A', b: 'B', c: 'C', d: 'D' };
@@ -48,7 +59,14 @@ export default function QuizMode() {
     if (!chosen || confirmed) return;
     const isCorrect = chosen === currentQ.answer;
     setConfirmed(true);
-    recordWeakness(currentQ, chosen, isCorrect);
+
+    // Always write to localStorage (powers guest weakness drill)
+    recordLocalWeakness(currentQ, isCorrect);
+    // Also write to Firestore if logged in
+    if (user) {
+      recordAnswerForUser(user.uid, currentQ, isCorrect).catch(console.warn);
+    }
+
     setAnswers(prev => [...prev, { question: currentQ, chosen, isCorrect }]);
   }
 
@@ -100,14 +118,4 @@ export default function QuizMode() {
       </div>
     </div>
   );
-}
-
-function recordWeakness(question, chosen, isCorrect) {
-  const stored = JSON.parse(localStorage.getItem('oec_weakness_data') || '{}');
-  const key = `${question.sectionId}_${question.num}`;
-  if (!stored[key]) stored[key] = { correct: 0, wrong: 0, question };
-  if (isCorrect) stored[key].correct++;
-  else stored[key].wrong++;
-  stored[key].question = question;
-  localStorage.setItem('oec_weakness_data', JSON.stringify(stored));
 }

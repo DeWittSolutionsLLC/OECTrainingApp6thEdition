@@ -3,9 +3,11 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import QuestionCard from '../components/QuestionCard';
 import ProgressBar from '../components/ProgressBar';
 import { getQuestionsBySection, shuffle } from '../data/oecData';
+import { recordAnswerForUser } from '../firebase/firebase';
+import { useAuth } from '../context/AuthContext';
 import '../styles/practice.css';
 
-function recordWeakness(question, chosen, isCorrect) {
+function recordLocalWeakness(question, isCorrect) {
   const stored = JSON.parse(localStorage.getItem('oec_weakness_data') || '{}');
   const key = `${question.sectionId}_${question.num}`;
   if (!stored[key]) stored[key] = { correct: 0, wrong: 0, question };
@@ -18,6 +20,7 @@ function recordWeakness(question, chosen, isCorrect) {
 export default function PracticeMode() {
   const { state } = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [session, setSession] = useState([]);
   const [index, setIndex] = useState(0);
@@ -52,7 +55,12 @@ export default function PracticeMode() {
     if (!chosen || confirmed) return;
     const isCorrect = chosen === currentQ.answer;
     setConfirmed(true);
-    recordWeakness(currentQ, chosen, isCorrect);
+
+    recordLocalWeakness(currentQ, isCorrect);
+    if (user) {
+      recordAnswerForUser(user.uid, currentQ, isCorrect).catch(console.warn);
+    }
+
     if (isCorrect) setCorrect(c => c + 1);
     else setWrong(w => w + 1);
   }

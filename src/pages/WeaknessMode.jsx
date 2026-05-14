@@ -1,23 +1,39 @@
 import { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import QuestionCard from '../components/QuestionCard';
 import ProgressBar from '../components/ProgressBar';
-import { getWeaknessData, clearWeaknessData } from '../hooks/useSession';
 import { shuffle } from '../data/oecData';
+import { recordAnswerForUser, getUserWeaknessData, clearUserWeaknessData } from '../firebase/firebase';
+import { useAuth } from '../context/AuthContext';
 import '../styles/weakness.css';
 
-function recordWeakness(question, chosen, isCorrect) {
-  const stored = JSON.parse(localStorage.getItem('oec_weakness_data') || '{}');
+const LOCAL_KEY = 'oec_weakness_data';
+
+function getLocalWeaknessData() {
+  const stored = JSON.parse(localStorage.getItem(LOCAL_KEY) || '{}');
+  return Object.values(stored)
+    .filter(d => d.wrong > 0)
+    .sort((a, b) => {
+      const rA = a.wrong / (a.correct + a.wrong);
+      const rB = b.wrong / (b.correct + b.wrong);
+      return rB - rA;
+    });
+}
+
+function recordLocalWeakness(question, isCorrect) {
+  const stored = JSON.parse(localStorage.getItem(LOCAL_KEY) || '{}');
   const key = `${question.sectionId}_${question.num}`;
   if (!stored[key]) stored[key] = { correct: 0, wrong: 0, question };
   if (isCorrect) stored[key].correct++;
   else stored[key].wrong++;
   stored[key].question = question;
-  localStorage.setItem('oec_weakness_data', JSON.stringify(stored));
+  localStorage.setItem(LOCAL_KEY, JSON.stringify(stored));
 }
 
 export default function WeaknessMode() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
   const [session, setSession] = useState([]);
   const [index, setIndex] = useState(0);
   const [chosen, setChosen] = useState(null);
@@ -25,13 +41,31 @@ export default function WeaknessMode() {
   const [correct, setCorrect] = useState(0);
   const [wrong, setWrong] = useState(0);
   const [mastered, setMastered] = useState([]);
+  // Live per-question stats (from Firestore or localStorage)
+  const [questionStats, setQuestionStats] = useState({});
 
   useEffect(() => {
-    const data = getWeaknessData();
-    if (data.length === 0) { navigate('/setup/weakness'); return; }
-    const questions = shuffle(data.map(d => d.question));
-    setSession(questions);
-  }, [navigate]);
+    async function loadSession() {
+      let data;
+      if (user) {
+        data = await getUserWeaknessData(user.uid).catch(() => getLocalWeaknessData());
+      } else {
+        data = getLocalWeaknessData();
+      }
+
+      if (data.length === 0) { navigate('/setup/weakness'); return; }
+
+      // Build a stats map keyed by sectionId_num for the sidebar display
+      const statsMap = {};
+      data.forEach(d => {
+        const key = `${d.question.sectionId}_${d.question.num}`;
+        statsMap[key] = { correct: d.correct, wrong: d.wrong };
+      });
+      setQuestionStats(statsMap);
+      setSession(shuffle(data.map(d => d.question)));
+    }
+    loadSession();
+  }, [user, navigate]);
 
   useEffect(() => {
     function onKey(e) {
@@ -51,7 +85,20 @@ export default function WeaknessMode() {
     if (!chosen || confirmed) return;
     const isCorrect = chosen === currentQ.answer;
     setConfirmed(true);
-    recordWeakness(currentQ, chosen, isCorrect);
+
+    // Update local stats display immediately
+    const key = `${currentQ.sectionId}_${currentQ.num}`;
+    setQuestionStats(prev => {
+      const s = prev[key] || { correct: 0, wrong: 0 };
+      return { ...prev, [key]: { correct: s.correct + (isCorrect ? 1 : 0), wrong: s.wrong + (isCorrect ? 0 : 1) } };
+    });
+
+    // Persist
+    recordLocalWeakness(currentQ, isCorrect);
+    if (user) {
+      recordAnswerForUser(user.uid, currentQ, isCorrect).catch(console.warn);
+    }
+
     if (isCorrect) {
       setCorrect(c => c + 1);
       setMastered(m => [...m, currentQ]);
@@ -76,11 +123,18 @@ export default function WeaknessMode() {
     }
   }
 
+  async function handleClear() {
+    if (user) {
+      await clearUserWeaknessData(user.uid).catch(console.warn);
+    }
+    localStorage.removeItem(LOCAL_KEY);
+    navigate('/');
+  }
+
   if (!currentQ) return null;
 
-  const stored = JSON.parse(localStorage.getItem('oec_weakness_data') || '{}');
   const key = `${currentQ.sectionId}_${currentQ.num}`;
-  const stats = stored[key] || { correct: 0, wrong: 0 };
+  const stats = questionStats[key] || { correct: 0, wrong: 0 };
   const totalAttempts = stats.correct + stats.wrong;
   const errorRate = totalAttempts > 0 ? Math.round((stats.wrong / totalAttempts) * 100) : 0;
 
@@ -135,7 +189,7 @@ export default function WeaknessMode() {
           )}
         </div>
 
-        <button className="weakness-clear" onClick={() => { clearWeaknessData(); navigate('/'); }}>
+        <button className="weakness-clear" onClick={handleClear}>
           Clear all weakness data
         </button>
       </div>

@@ -17,10 +17,11 @@ import NavBar        from './components/NavBar';
 export default function App() {
   return (
     <BrowserRouter>
-      <NavBar/>
       <AuthProvider>
+        <NavBar/>
         
         <Routes>
+
           <Route path="/"            element={<Home />} />
           <Route path="/auth"        element={<AuthPage />} />
           <Route path="/profile"     element={<ProfilePage />} />
