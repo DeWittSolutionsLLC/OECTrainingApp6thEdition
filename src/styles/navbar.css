@@ -89,7 +89,19 @@
   .navbar { padding: 0 14px; height: 50px; }
   .navbar__edition { display: none; }
   .navbar__link { font-size: 0.75rem; padding: 4px 8px; }
-}/* --- Desktop Toggle Hidden --- */
+}
+
+/* Logout button should look like links */
+.navbar__logout {
+  cursor: pointer;
+  background: transparent;
+}
+.navbar__logout:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* --- Desktop Toggle Hidden --- */
 .navbar__toggle {
   display: none;
   flex-direction: column;
@@ -102,6 +114,7 @@
   padding: 0;
   z-index: 101;
 }
+
 
 .hamburger-line {
   width: 24px;

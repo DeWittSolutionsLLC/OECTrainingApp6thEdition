@@ -1,11 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { logOut } from '../firebase/firebase';
 import '../styles/navbar.css';
 
 export default function NavBar() {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const isHome = pathname === '/';
+
 
   // Close menu when a link is clicked or route changes
   useEffect(() => {
@@ -39,7 +44,31 @@ export default function NavBar() {
         <Link to="/setup/speed" className={`navbar__link ${pathname.includes('speed') ? 'navbar__link--active' : ''}`}>Speed</Link>
         <Link to="/setup/weakness" className={`navbar__link ${pathname.includes('weakness') ? 'navbar__link--active' : ''}`}>Weakness</Link>
         <Link to="/leaderboard" className={`navbar__link ${pathname.includes('leaderboard') ? 'navbar__link--active' : ''}`}>Leaderboard</Link>
+
+        {user ? (
+          <>
+            <Link to="/profile" className={`navbar__link ${pathname.includes('profile') ? 'navbar__link--active' : ''}`}>Profile</Link>
+            <button
+              type="button"
+              className="navbar__link navbar__logout"
+              onClick={async () => {
+                try {
+                  await logOut();
+                } finally {
+                  navigate('/');
+                  setIsOpen(false);
+                }
+              }}
+              disabled={authLoading}
+            >
+              {authLoading ? 'Logging out…' : 'Log out'}
+            </button>
+          </>
+        ) : (
+          <Link to="/auth" className={`navbar__link ${pathname.includes('auth') ? 'navbar__link--active' : ''}`}>Sign In</Link>
+        )}
       </nav>
     </header>
+
   );
 }
