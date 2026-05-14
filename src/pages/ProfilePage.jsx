@@ -23,13 +23,18 @@ export default function ProfilePage() {
     if (!user) { navigate('/auth'); return; }
 
     (async () => {
-      const [s, w] = await Promise.all([
-        getUserSessions(user.uid, 15),
-        getUserWeaknessData(user.uid),
-      ]);
-      setSessions(s);
-      setWeakness(w);
-      setLoadingSessions(false);
+      try {
+        const [s, w] = await Promise.all([
+          getUserSessions(user.uid, 15),
+          getUserWeaknessData(user.uid),
+        ]);
+        setSessions(s);
+        setWeakness(w);
+      } catch (e) {
+        console.warn('Failed to load profile data:', e);
+      } finally {
+        setLoadingSessions(false);
+      }
     })();
   }, [user, loading, navigate]);
 

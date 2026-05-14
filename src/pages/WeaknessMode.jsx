@@ -41,6 +41,7 @@ export default function WeaknessMode() {
   const [correct, setCorrect] = useState(0);
   const [wrong, setWrong] = useState(0);
   const [mastered, setMastered] = useState([]);
+  const [loading, setLoading] = useState(true);
   // Live per-question stats (from Firestore or localStorage)
   const [questionStats, setQuestionStats] = useState({});
 
@@ -63,6 +64,7 @@ export default function WeaknessMode() {
       });
       setQuestionStats(statsMap);
       setSession(shuffle(data.map(d => d.question)));
+      setLoading(false);
     }
     loadSession();
   }, [user, navigate]);
@@ -131,6 +133,7 @@ export default function WeaknessMode() {
     navigate('/');
   }
 
+  if (loading) return <div className="weakness-loading">Loading your drill…</div>;
   if (!currentQ) return null;
 
   const key = `${currentQ.sectionId}_${currentQ.num}`;

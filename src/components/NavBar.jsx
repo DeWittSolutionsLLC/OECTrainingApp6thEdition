@@ -37,13 +37,13 @@ export default function NavBar() {
 
       <nav className={`navbar__links ${isOpen ? 'navbar__links--open' : ''}`}>
         <div className="navbar__nav-group">
-          <Link to="/" className={`navbar__link ${pathname === '/' ? 'navbar__link--active' : ''}`}>Home</Link>
-          <Link to="/setup/quiz" className={`navbar__link ${pathname.includes('quiz') || pathname.includes('setup') ? 'navbar__link--active' : ''}`}>Quiz</Link>
-          <Link to="/setup/practice" className={`navbar__link ${pathname.includes('practice') ? 'navbar__link--active' : ''}`}>Practice</Link>
-          <Link to="/setup/flashcards" className={`navbar__link ${pathname.includes('flash') ? 'navbar__link--active' : ''}`}>Flashcards</Link>
-          <Link to="/setup/speed" className={`navbar__link ${pathname.includes('speed') ? 'navbar__link--active' : ''}`}>Speed</Link>
-          <Link to="/setup/weakness" className={`navbar__link ${pathname.includes('weakness') ? 'navbar__link--active' : ''}`}>Weakness</Link>
-          <Link to="/leaderboard" className={`navbar__link ${pathname.includes('leaderboard') ? 'navbar__link--active' : ''}`}>Leaderboard</Link>
+          <Link to="/" onClick={() => setIsOpen(false)} className={`navbar__link ${pathname === '/' ? 'navbar__link--active' : ''}`}>Home</Link>
+          <Link to="/setup/quiz" onClick={() => setIsOpen(false)} className={`navbar__link ${pathname.includes('quiz') || pathname.includes('setup') ? 'navbar__link--active' : ''}`}>Quiz</Link>
+          <Link to="/setup/practice" onClick={() => setIsOpen(false)} className={`navbar__link ${pathname.includes('practice') ? 'navbar__link--active' : ''}`}>Practice</Link>
+          <Link to="/setup/flashcards" onClick={() => setIsOpen(false)} className={`navbar__link ${pathname.includes('flash') ? 'navbar__link--active' : ''}`}>Flashcards</Link>
+          <Link to="/setup/speed" onClick={() => setIsOpen(false)} className={`navbar__link ${pathname.includes('speed') ? 'navbar__link--active' : ''}`}>Speed</Link>
+          <Link to="/setup/weakness" onClick={() => setIsOpen(false)} className={`navbar__link ${pathname.includes('weakness') ? 'navbar__link--active' : ''}`}>Weakness</Link>
+          <Link to="/leaderboard" onClick={() => setIsOpen(false)} className={`navbar__link ${pathname.includes('leaderboard') ? 'navbar__link--active' : ''}`}>Leaderboard</Link>
         </div>
 
         <div className="navbar__auth">

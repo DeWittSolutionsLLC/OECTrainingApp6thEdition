@@ -79,7 +79,12 @@ export default function Leaderboard() {
         )}
 
         {loading && <div className="lb-status">Loading…</div>}
-        {!loading && error && <div className="lb-error">{error}</div>}
+        {!loading && error && (
+          <div className="lb-error">
+            <p>{error}</p>
+            <button className="lb-retry" onClick={load}>Try again</button>
+          </div>
+        )}
 
         {!loading && !error && (
           <div className="lb-table" role="table" aria-label="Leaderboard table">

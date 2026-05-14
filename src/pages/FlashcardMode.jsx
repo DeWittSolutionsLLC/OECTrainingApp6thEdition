@@ -28,19 +28,19 @@ export default function FlashcardMode() {
 
   function handleKnown() {
     setKnown(k => k + 1);
-    advance();
+    advance(reviewDeck.length);
   }
 
   function handleReview() {
-    if (phase === 'main') setReviewDeck(prev => [...prev, currentQ]);
-    advance();
+    const nextReview = phase === 'main' ? [...reviewDeck, currentQ] : reviewDeck;
+    if (phase === 'main') setReviewDeck(nextReview);
+    advance(nextReview.length);
   }
 
-  function advance() {
+  function advance(futureReviewLength) {
     setFlipped(false);
     if (index + 1 >= currentDeck.length) {
-      if (phase === 'main' && reviewDeck.length > 0) {
-        // Will set reviewDeck via handleReview, but we need +1 item
+      if (phase === 'main' && futureReviewLength > 0) {
         setPhase('review');
         setIndex(0);
       } else {
@@ -50,11 +50,6 @@ export default function FlashcardMode() {
       setIndex(i => i + 1);
     }
   }
-
-  // After phase switches, re-check reviewDeck length
-  useEffect(() => {
-    if (phase === 'review' && reviewDeck.length === 0) setPhase('done');
-  }, [phase, reviewDeck]);
 
   useEffect(() => {
     function onKey(e) {

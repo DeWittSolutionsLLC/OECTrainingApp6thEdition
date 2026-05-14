@@ -29,6 +29,7 @@ export default function PracticeMode() {
   const [skipped, setSkipped] = useState(0);
   const [correct, setCorrect] = useState(0);
   const [wrong, setWrong] = useState(0);
+  const [answers, setAnswers] = useState([]);
 
   useEffect(() => {
     if (!state) { navigate('/setup/practice'); return; }
@@ -61,6 +62,7 @@ export default function PracticeMode() {
       recordAnswerForUser(user.uid, currentQ, isCorrect).catch(console.warn);
     }
 
+    setAnswers(prev => [...prev, { question: currentQ, chosen, isCorrect }]);
     if (isCorrect) setCorrect(c => c + 1);
     else setWrong(w => w + 1);
   }
@@ -69,7 +71,7 @@ export default function PracticeMode() {
     if (index + 1 >= session.length) {
       navigate('/results', {
         state: {
-          answers: [],
+          answers: [...answers],
           mode: 'practice',
           summary: { correct, wrong, skipped, total: session.length },
         },
