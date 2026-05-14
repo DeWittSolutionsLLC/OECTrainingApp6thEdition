@@ -14,13 +14,12 @@ import AuthPage      from './pages/AuthPage';
 import ProfilePage   from './pages/ProfilePage';
 import NavBar        from './components/NavBar';
 
-const navBar = () => <NavBar />
-
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter>\
+      <NavBar/>
       <AuthProvider>
-        <navBar/>
+        
         <Routes>
           <Route path="/"            element={<Home />} />
           <Route path="/auth"        element={<AuthPage />} />
