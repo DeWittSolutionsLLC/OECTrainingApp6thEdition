@@ -1,0 +1,38 @@
+.pbar { margin-bottom: 20px; }
+
+.pbar__track {
+  height: 4px;
+  background: var(--bg-elevated);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.pbar__fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+  border-radius: 99px;
+  transition: width 0.35s ease;
+}
+
+.pbar__info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pbar__pos {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.pbar__score {
+  display: flex;
+  gap: 14px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.pbar__correct { color: var(--accent-green); }
+.pbar__wrong   { color: var(--accent-red); }

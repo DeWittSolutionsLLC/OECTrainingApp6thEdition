@@ -1,0 +1,126 @@
+.weakness-page {
+  min-height: calc(100vh - 56px);
+  padding: 24px 16px 60px;
+  display: flex;
+  justify-content: center;
+}
+
+.weakness-inner { width: 100%; max-width: 680px; }
+
+.weakness-header {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.weakness-header-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.weakness-exit {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-family: var(--font-body);
+  transition: all var(--transition);
+}
+.weakness-exit:hover { color: var(--text-primary); border-color: var(--border-light); }
+
+.weakness-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.weakness-fire { font-size: 1.1rem; }
+
+.weakness-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--accent-purple);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Stats row */
+.weakness-stats {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.w-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 8px;
+}
+
+.w-stat__n {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--text-secondary);
+}
+
+.w-stat__n--err { color: var(--accent-red); }
+.w-stat__n--ok  { color: var(--accent-green); }
+
+.w-stat__l {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: center;
+}
+
+/* Actions */
+.weakness-actions { margin-bottom: 14px; }
+
+.weakness-btn {
+  width: 100%;
+  padding: 15px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: var(--font-body);
+  transition: all var(--transition);
+}
+
+.weakness-btn--confirm {
+  background: var(--accent-purple);
+  color: #fff;
+}
+.weakness-btn--confirm:hover:not(:disabled) { filter: brightness(1.1); }
+.weakness-btn--confirm:disabled { opacity: 0.38; }
+
+.weakness-btn--next {
+  background: var(--accent-green);
+  color: #fff;
+}
+.weakness-btn--next:hover { filter: brightness(1.1); }
+
+.weakness-clear {
+  display: block;
+  margin: 24px auto 0;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  text-decoration: underline;
+  font-family: var(--font-body);
+  transition: color var(--transition);
+}
+.weakness-clear:hover { color: var(--accent-red); }
