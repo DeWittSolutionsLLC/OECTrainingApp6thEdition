@@ -63,6 +63,7 @@ export default function Home() {
 
   return (
     <div className="home">
+      
 
       <div className="home__hero">
         <div className="home__hero-bg" aria-hidden="true">

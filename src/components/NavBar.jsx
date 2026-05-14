@@ -45,28 +45,22 @@ export default function NavBar() {
         <Link to="/setup/weakness" className={`navbar__link ${pathname.includes('weakness') ? 'navbar__link--active' : ''}`}>Weakness</Link>
         <Link to="/leaderboard" className={`navbar__link ${pathname.includes('leaderboard') ? 'navbar__link--active' : ''}`}>Leaderboard</Link>
 
+        {/* Auth nav bar */}
+      <div className="home__nav">
         {user ? (
-          <>
-            <Link to="/profile" className={`navbar__link ${pathname.includes('profile') ? 'navbar__link--active' : ''}`}>Profile</Link>
-            <button
-              type="button"
-              className="navbar__link navbar__logout"
-              onClick={async () => {
-                try {
-                  await logOut();
-                } finally {
-                  navigate('/');
-                  setIsOpen(false);
-                }
-              }}
-              disabled={authLoading}
-            >
-              {authLoading ? 'Logging out…' : 'Log out'}
-            </button>
-          </>
+          <button className="home__avatar-btn" onClick={() => navigate('/profile')} title="View profile">
+            {profile?.photoURL
+              ? <img src={profile.photoURL} alt={profile.displayName} className="home__avatar-img" />
+              : <span className="home__avatar-initial">{(profile?.displayName || user.email || 'A')[0].toUpperCase()}</span>
+            }
+            <span className="home__nav-name">{profile?.displayName || 'Profile'}</span>
+          </button>
         ) : (
-          <Link to="/auth" className={`navbar__link ${pathname.includes('auth') ? 'navbar__link--active' : ''}`}>Sign In</Link>
+          <button className="home__signin-btn" onClick={() => navigate('/auth')}>
+            Sign In
+          </button>
         )}
+      </div>
       </nav>
     </header>
 
