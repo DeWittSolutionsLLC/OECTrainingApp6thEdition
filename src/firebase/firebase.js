@@ -18,6 +18,7 @@ import {
   getDoc,
   setDoc,
   updateDoc,
+  deleteDoc,
   increment,
   collection,
   addDoc,
@@ -145,13 +146,22 @@ export async function getUserWeaknessData(uid) {
   const ref = collection(db, 'users', uid, 'weakness');
   const snap = await getDocs(ref);
   return snap.docs
-    .map((d) => d.data())
+    .map((d) => ({ streak: 0, ...d.data() }))
     .filter((d) => d.wrong > 0)
     .sort((a, b) => {
       const rateA = a.wrong / (a.correct + a.wrong);
       const rateB = b.wrong / (b.correct + b.wrong);
       return rateB - rateA;
     });
+}
+
+/**
+ * Removes a single weakness entry when the user has mastered it.
+ * Called from WeaknessMode when streak reaches the mastery threshold.
+ */
+export async function clearSingleWeaknessEntry(uid, key) {
+  const ref = doc(db, 'users', uid, 'weakness', key);
+  await deleteDoc(ref).catch(console.warn);
 }
 
 /**

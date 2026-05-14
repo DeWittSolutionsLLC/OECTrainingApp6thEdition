@@ -86,6 +86,65 @@
 .w-stat__n--err { color: var(--accent-red); }
 .w-stat__n--ok  { color: var(--accent-green); }
 
+/* Streak pip indicators */
+.w-streak-pips {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  margin-bottom: 2px;
+}
+
+.w-streak-pip {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--border);
+  border: 2px solid var(--border);
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.w-streak-pip--filled {
+  background: #f59e0b;
+  border-color: #f59e0b;
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.5);
+}
+
+/* Mastered banner */
+.weakness-mastered-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(34, 197, 94, 0.12));
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  margin-bottom: 14px;
+  animation: bannerIn 0.3s ease;
+}
+
+@keyframes bannerIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.weakness-mastered-banner__icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.weakness-mastered-banner__title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #f59e0b;
+  margin: 0 0 2px;
+}
+
+.weakness-mastered-banner__sub {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
 .w-stat__l {
   font-size: 0.68rem;
   color: var(--text-muted);

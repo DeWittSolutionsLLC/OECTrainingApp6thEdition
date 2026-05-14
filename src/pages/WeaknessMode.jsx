@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import QuestionCard from '../components/QuestionCard';
 import ProgressBar from '../components/ProgressBar';
 import { shuffle } from '../data/oecData';
-import { recordAnswerForUser, getUserWeaknessData, clearUserWeaknessData } from '../firebase/firebase';
+import { recordAnswerForUser, getUserWeaknessData, clearUserWeaknessData, clearSingleWeaknessEntry } from '../firebase/firebase';
 import { useAuth } from '../context/AuthContext';
 import '../styles/weakness.css';
 
 const LOCAL_KEY = 'oec_weakness_data';
+const MASTERY_STREAK = 3;
 
 function getLocalWeaknessData() {
   const stored = JSON.parse(localStorage.getItem(LOCAL_KEY) || '{}');
@@ -23,10 +24,22 @@ function getLocalWeaknessData() {
 function recordLocalWeakness(question, isCorrect) {
   const stored = JSON.parse(localStorage.getItem(LOCAL_KEY) || '{}');
   const key = `${question.sectionId}_${question.num}`;
-  if (!stored[key]) stored[key] = { correct: 0, wrong: 0, question };
-  if (isCorrect) stored[key].correct++;
-  else stored[key].wrong++;
+  if (!stored[key]) stored[key] = { correct: 0, wrong: 0, streak: 0, question };
+
+  if (isCorrect) {
+    stored[key].correct++;
+    stored[key].streak = (stored[key].streak || 0) + 1;
+  } else {
+    stored[key].wrong++;
+    stored[key].streak = 0;
+  }
   stored[key].question = question;
+
+  // Remove from weakness data when mastery streak reached
+  if (stored[key].streak >= MASTERY_STREAK) {
+    delete stored[key];
+  }
+
   localStorage.setItem(LOCAL_KEY, JSON.stringify(stored));
 }
 
@@ -40,9 +53,9 @@ export default function WeaknessMode() {
   const [confirmed, setConfirmed] = useState(false);
   const [correct, setCorrect] = useState(0);
   const [wrong, setWrong] = useState(0);
-  const [mastered, setMastered] = useState([]);
+  const [masteredCount, setMasteredCount] = useState(0);
+  const [justMastered, setJustMastered] = useState(false);
   const [loading, setLoading] = useState(true);
-  // Live per-question stats (from Firestore or localStorage)
   const [questionStats, setQuestionStats] = useState({});
 
   useEffect(() => {
@@ -56,11 +69,10 @@ export default function WeaknessMode() {
 
       if (data.length === 0) { navigate('/setup/weakness'); return; }
 
-      // Build a stats map keyed by sectionId_num for the sidebar display
       const statsMap = {};
       data.forEach(d => {
         const key = `${d.question.sectionId}_${d.question.num}`;
-        statsMap[key] = { correct: d.correct, wrong: d.wrong };
+        statsMap[key] = { correct: d.correct, wrong: d.wrong, streak: d.streak || 0 };
       });
       setQuestionStats(statsMap);
       setSession(shuffle(data.map(d => d.question)));
@@ -88,34 +100,45 @@ export default function WeaknessMode() {
     const isCorrect = chosen === currentQ.answer;
     setConfirmed(true);
 
-    // Update local stats display immediately
     const key = `${currentQ.sectionId}_${currentQ.num}`;
+    const prevStreak = questionStats[key]?.streak || 0;
+    const newStreak = isCorrect ? prevStreak + 1 : 0;
+    const nowMastered = newStreak >= MASTERY_STREAK;
+
     setQuestionStats(prev => {
-      const s = prev[key] || { correct: 0, wrong: 0 };
-      return { ...prev, [key]: { correct: s.correct + (isCorrect ? 1 : 0), wrong: s.wrong + (isCorrect ? 0 : 1) } };
+      const s = prev[key] || { correct: 0, wrong: 0, streak: 0 };
+      return {
+        ...prev,
+        [key]: {
+          correct: s.correct + (isCorrect ? 1 : 0),
+          wrong: s.wrong + (isCorrect ? 0 : 1),
+          streak: newStreak,
+        },
+      };
     });
 
-    // Persist
     recordLocalWeakness(currentQ, isCorrect);
     if (user) {
       recordAnswerForUser(user.uid, currentQ, isCorrect).catch(console.warn);
+      if (nowMastered) {
+        clearSingleWeaknessEntry(user.uid, key).catch(console.warn);
+      }
     }
 
-    if (isCorrect) {
-      setCorrect(c => c + 1);
-      setMastered(m => [...m, currentQ]);
-    } else {
-      setWrong(w => w + 1);
-    }
+    setJustMastered(nowMastered);
+    if (isCorrect) setCorrect(c => c + 1);
+    else setWrong(w => w + 1);
+    if (nowMastered) setMasteredCount(n => n + 1);
   }
 
   function handleNext() {
+    setJustMastered(false);
     if (index + 1 >= session.length) {
       navigate('/results', {
         state: {
           answers: [],
           mode: 'weakness',
-          summary: { correct, wrong, mastered: mastered.length, total: session.length },
+          summary: { correct, wrong, mastered: masteredCount, total: session.length },
         },
       });
     } else {
@@ -137,9 +160,10 @@ export default function WeaknessMode() {
   if (!currentQ) return null;
 
   const key = `${currentQ.sectionId}_${currentQ.num}`;
-  const stats = questionStats[key] || { correct: 0, wrong: 0 };
+  const stats = questionStats[key] || { correct: 0, wrong: 0, streak: 0 };
   const totalAttempts = stats.correct + stats.wrong;
   const errorRate = totalAttempts > 0 ? Math.round((stats.wrong / totalAttempts) * 100) : 0;
+  const streak = stats.streak || 0;
 
   return (
     <div className="weakness-page">
@@ -163,17 +187,35 @@ export default function WeaknessMode() {
             <span className="w-stat__l">Times Wrong</span>
           </div>
           <div className="w-stat">
-            <span className="w-stat__n w-stat__n--ok">{mastered.length}</span>
-            <span className="w-stat__l">Mastered Today</span>
+            <div className="w-streak-pips">
+              {Array.from({ length: MASTERY_STREAK }).map((_, i) => (
+                <span key={i} className={`w-streak-pip ${i < streak ? 'w-streak-pip--filled' : ''}`} />
+              ))}
+            </div>
+            <span className="w-stat__l">Streak {streak}/{MASTERY_STREAK}</span>
+          </div>
+          <div className="w-stat">
+            <span className="w-stat__n w-stat__n--ok">{masteredCount}</span>
+            <span className="w-stat__l">Mastered</span>
           </div>
         </div>
+
+        {justMastered && confirmed && (
+          <div className="weakness-mastered-banner">
+            <span className="weakness-mastered-banner__icon">🏆</span>
+            <div>
+              <p className="weakness-mastered-banner__title">Mastered!</p>
+              <p className="weakness-mastered-banner__sub">This question has been removed from your weakness list.</p>
+            </div>
+          </div>
+        )}
 
         <QuestionCard
           question={currentQ}
           chosen={chosen}
           confirmed={confirmed}
           onChoose={setChosen}
-          showExplanation={true}
+          showExplanation={!justMastered}
         />
 
         <div className="weakness-actions">
