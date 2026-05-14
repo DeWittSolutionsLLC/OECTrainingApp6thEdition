@@ -1,155 +1,146 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getQuestionsBySection, getSectionColor, shuffle } from '../data/oecData';
-import '../styles/flashcard.css';
+import '../styles/speed.css';
 
-export default function FlashcardMode() {
+const TIME_LIMIT = 10;
+
+function recordWeakness(question, chosen, isCorrect) {
+  const stored = JSON.parse(localStorage.getItem('oec_weakness_data') || '{}');
+  const key = `${question.sectionId}_${question.num}`;
+  if (!stored[key]) stored[key] = { correct: 0, wrong: 0, question };
+  if (isCorrect) stored[key].correct++;
+  else stored[key].wrong++;
+  stored[key].question = question;
+  localStorage.setItem('oec_weakness_data', JSON.stringify(stored));
+}
+
+export default function SpeedMode() {
   const { state } = useLocation();
   const navigate = useNavigate();
 
-  const [deck, setDeck] = useState([]);
-  const [reviewDeck, setReviewDeck] = useState([]);
+  const [session, setSession] = useState([]);
   const [index, setIndex] = useState(0);
-  const [flipped, setFlipped] = useState(false);
-  const [known, setKnown] = useState(0);
-  const [phase, setPhase] = useState('main'); // 'main' | 'review' | 'done'
+  const [timeLeft, setTimeLeft] = useState(TIME_LIMIT);
+  const [chosen, setChosen] = useState(null);
+  const [locked, setLocked] = useState(false);
+  const [answers, setAnswers] = useState([]);
+  const [flash, setFlash] = useState(null); // 'correct' | 'wrong'
+  const timerRef = useRef(null);
 
   useEffect(() => {
-    if (!state) { navigate('/setup/flashcards'); return; }
+    if (!state) { navigate('/setup/speed'); return; }
     let pool = getQuestionsBySection(state.selectedSections);
-    if (state.order === 'random') pool = shuffle(pool);
-    setDeck(pool);
+    pool = shuffle(pool);
+    const limit = state.count && state.count < pool.length ? state.count : Math.min(pool.length, 20);
+    setSession(pool.slice(0, limit));
   }, [state, navigate]);
 
-  const currentDeck = phase === 'review' ? reviewDeck : deck;
-  const currentQ = currentDeck[index];
+  const currentQ = session[index];
 
-  function handleFlip() { setFlipped(f => !f); }
+  const advance = useCallback((chosenLetter) => {
+    if (!currentQ || locked) return;
+    setLocked(true);
+    clearInterval(timerRef.current);
 
-  function handleKnown() {
-    setKnown(k => k + 1);
-    advance();
-  }
+    const isCorrect = chosenLetter === currentQ.answer;
+    recordWeakness(currentQ, chosenLetter, isCorrect);
+    setFlash(isCorrect ? 'correct' : 'wrong');
+    setAnswers(prev => [...prev, { question: currentQ, chosen: chosenLetter, isCorrect }]);
 
-  function handleReview() {
-    if (phase === 'main') setReviewDeck(prev => [...prev, currentQ]);
-    advance();
-  }
-
-  function advance() {
-    setFlipped(false);
-    if (index + 1 >= currentDeck.length) {
-      if (phase === 'main' && reviewDeck.length > 0) {
-        // Will set reviewDeck via handleReview, but we need +1 item
-        setPhase('review');
-        setIndex(0);
+    setTimeout(() => {
+      setFlash(null);
+      if (index + 1 >= session.length) {
+        navigate('/results', { state: { answers: [...answers, { question: currentQ, chosen: chosenLetter, isCorrect }], mode: 'speed' } });
       } else {
-        setPhase('done');
+        setIndex(i => i + 1);
+        setChosen(null);
+        setLocked(false);
+        setTimeLeft(TIME_LIMIT);
       }
-    } else {
-      setIndex(i => i + 1);
-    }
-  }
+    }, 600);
+  }, [currentQ, locked, index, session.length, answers, navigate]);
 
-  // After phase switches, re-check reviewDeck length
+  // Countdown timer
   useEffect(() => {
-    if (phase === 'review' && reviewDeck.length === 0) setPhase('done');
-  }, [phase, reviewDeck]);
+    if (!currentQ || locked) return;
+    timerRef.current = setInterval(() => {
+      setTimeLeft(t => {
+        if (t <= 1) {
+          clearInterval(timerRef.current);
+          advance(null); // time expired
+          return 0;
+        }
+        return t - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timerRef.current);
+  }, [currentQ, locked, advance]);
 
+  // Reset timer on new question
+  useEffect(() => { setTimeLeft(TIME_LIMIT); }, [index]);
+
+  // Keyboard
   useEffect(() => {
     function onKey(e) {
-      if (e.key === ' ' || e.key === 'Enter') handleFlip();
-      if (e.key === 'ArrowRight' && flipped) handleKnown();
-      if (e.key === 'ArrowLeft' && flipped) handleReview();
+      if (locked) return;
+      const map = { a: 'A', b: 'B', c: 'C', d: 'D' };
+      const letter = map[e.key.toLowerCase()];
+      if (letter) { setChosen(letter); advance(letter); }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  });
-
-  if (phase === 'done') {
-    const total = deck.length;
-    const pct = total > 0 ? Math.round((known / total) * 100) : 0;
-    return (
-      <div className="fc-page">
-        <div className="fc-done">
-          <div className="fc-done__icon">🎉</div>
-          <h2 className="fc-done__title">Deck Complete!</h2>
-          <div className="fc-done__stats">
-            <div className="fc-done__stat"><span style={{color:'#22c55e'}}>{known}</span><span>Known</span></div>
-            <div className="fc-done__stat"><span style={{color:'#ef4444'}}>{total - known}</span><span>For Review</span></div>
-            <div className="fc-done__stat"><span style={{color:'#3b82f6'}}>{pct}%</span><span>Mastery</span></div>
-          </div>
-          <div className="fc-done__actions">
-            <button className="fc-btn fc-btn--secondary" onClick={() => navigate('/')}>Home</button>
-            <button className="fc-btn fc-btn--primary" onClick={() => navigate('/setup/flashcards')}>New Deck</button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  }, [locked, advance]);
 
   if (!currentQ) return null;
+
   const color = getSectionColor(currentQ.sectionId);
-  const total = currentDeck.length;
+  const timerPct = (timeLeft / TIME_LIMIT) * 100;
+  const timerColor = timeLeft > 6 ? '#22c55e' : timeLeft > 3 ? '#f59e0b' : '#ef4444';
+  const correct = answers.filter(a => a.isCorrect).length;
+  const wrong = answers.filter(a => !a.isCorrect).length;
 
   return (
-    <div className="fc-page">
-      <div className="fc-inner">
-        <div className="fc-header">
-          <button className="fc-exit" onClick={() => navigate('/')}>✕ Exit</button>
-          <div className="fc-meta">
-            {phase === 'review' && <span className="fc-review-badge">Review Round</span>}
-            <span className="fc-pos">{index + 1} / {total}</span>
-          </div>
-          <div className="fc-counts">
-            <span className="fc-known">{known} known</span>
-            <span className="fc-sep">·</span>
-            <span className="fc-review-count">{reviewDeck.length} to review</span>
+    <div className={`speed-page ${flash ? `speed-page--${flash}` : ''}`}>
+      <div className="speed-inner">
+        <div className="speed-header">
+          <button className="speed-exit" onClick={() => navigate('/')}>✕</button>
+          <div className="speed-score">
+            <span className="speed-correct">{correct}✓</span>
+            <span className="speed-wrong">{wrong}✗</span>
+            <span className="speed-pos">{index + 1}/{session.length}</span>
           </div>
         </div>
 
-        <div className="fc-progress">
-          <div className="fc-progress__bar" style={{ width: `${((index) / total) * 100}%` }} />
+        <div className="speed-timer-wrap">
+          <div className="speed-timer-track">
+            <div className="speed-timer-fill" style={{ width: `${timerPct}%`, background: timerColor }} />
+          </div>
+          <span className="speed-timer-num" style={{ color: timerColor }}>{timeLeft}s</span>
         </div>
 
-        <div className={`fc-card ${flipped ? 'fc-card--flipped' : ''}`} onClick={handleFlip}>
-          <div className="fc-card__front">
-            <span className="fc-card__pill" style={{ background: `${color}22`, color, border: `1px solid ${color}44` }}>
-              §{currentQ.sectionId} — {currentQ.sectionName}
-            </span>
-            <p className="fc-card__question">{currentQ.text}</p>
-            <span className="fc-card__hint">Tap or press Space to flip</span>
-          </div>
-          <div className="fc-card__back">
-            <span className="fc-card__answer-label">Answer</span>
-            <p className="fc-card__answer">
-              <strong>{currentQ.answer})</strong> {currentQ.choices[currentQ.answer]}
-            </p>
-            <div className="fc-card__all-choices">
-              {['A','B','C','D'].map(l => (
-                <div key={l} className={`fc-card__opt ${l === currentQ.answer ? 'fc-card__opt--correct' : ''}`}>
-                  <span className="fc-card__opt-l">{l}</span>
-                  <span>{currentQ.choices[l]}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+        <div className="speed-card">
+          <span className="speed-pill" style={{ background: `${color}22`, color, border: `1px solid ${color}44` }}>
+            §{currentQ.sectionId} — {currentQ.sectionName}
+          </span>
+          <p className="speed-question">{currentQ.text}</p>
         </div>
 
-        {flipped && (
-          <div className="fc-actions">
-            <button className="fc-action fc-action--review" onClick={handleReview}>
-              <span className="fc-action__icon">←</span>
-              <span>Needs Review</span>
+        <div className="speed-choices">
+          {['A','B','C','D'].map(letter => (
+            <button
+              key={letter}
+              className={`speed-choice ${chosen === letter ? 'speed-choice--selected' : ''} ${locked && letter === currentQ.answer ? 'speed-choice--correct' : ''} ${locked && chosen === letter && chosen !== currentQ.answer ? 'speed-choice--wrong' : ''}`}
+              onClick={() => !locked && (setChosen(letter), advance(letter))}
+              disabled={locked}
+            >
+              <span className="speed-choice__ltr">{letter}</span>
+              <span className="speed-choice__txt">{currentQ.choices[letter]}</span>
             </button>
-            <button className="fc-action fc-action--known" onClick={handleKnown}>
-              <span>Got It</span>
-              <span className="fc-action__icon">→</span>
-            </button>
-          </div>
-        )}
+          ))}
+        </div>
 
-        <p className="fc-hint">Space/Enter = flip · ← Review · → Got it</p>
+        <p className="speed-hint">Press A B C D quickly!</p>
       </div>
     </div>
   );
