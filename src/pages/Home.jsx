@@ -63,22 +63,6 @@ export default function Home() {
 
   return (
     <div className="home">
-      {/* Auth nav bar */}
-      <div className="home__nav">
-        {user ? (
-          <button className="home__avatar-btn" onClick={() => navigate('/profile')} title="View profile">
-            {profile?.photoURL
-              ? <img src={profile.photoURL} alt={profile.displayName} className="home__avatar-img" />
-              : <span className="home__avatar-initial">{(profile?.displayName || user.email || 'A')[0].toUpperCase()}</span>
-            }
-            <span className="home__nav-name">{profile?.displayName || 'Profile'}</span>
-          </button>
-        ) : (
-          <button className="home__signin-btn" onClick={() => navigate('/auth')}>
-            Sign In
-          </button>
-        )}
-      </div>
 
       <div className="home__hero">
         <div className="home__hero-bg" aria-hidden="true">
