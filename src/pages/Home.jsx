@@ -114,9 +114,6 @@ export default function Home() {
             >
               <div className="mode-card__top">
                 <span className="mode-card__icon">{mode.icon}</span>
-                {mode.id === 'weakness' && weakCount > 0 && (
-                  <span className="mode-card__badge">{weakCount} flagged</span>
-                )}
               </div>
               <h3 className="mode-card__title">{mode.title}</h3>
               <p className="mode-card__subtitle">{mode.subtitle}</p>
