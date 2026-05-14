@@ -7,7 +7,9 @@ import FlashcardMode from './pages/FlashcardMode';
 import SpeedMode from './pages/SpeedMode';
 import WeaknessMode from './pages/WeaknessMode';
 import Results from './pages/Results';
+import Leaderboard from './pages/Leaderboard';
 import NavBar from './components/NavBar';
+
 
 export default function App() {
   return (
@@ -28,6 +30,7 @@ export default function App() {
           <Route path="/weakness" element={<WeaknessMode />} />
 
           <Route path="/results" element={<Results />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
         </Routes>
       </main>
     </div>

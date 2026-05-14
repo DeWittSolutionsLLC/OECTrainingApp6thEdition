@@ -7,7 +7,7 @@ const MODES = [
     id: 'quiz',
     icon: '📋',
     title: 'Quiz Mode',
-    subtitle: 'Timed test with score tracking',
+    subtitle: 'Test with score tracking',
     desc: 'Answer questions one at a time. Choose your sections, get graded at the end. See what you got wrong.',
     color: '#3b82f6',
     path: '/setup/quiz',

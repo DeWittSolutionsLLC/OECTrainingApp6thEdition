@@ -1,9 +1,19 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getSectionColor } from '../data/oecData';
+import { submitLeaderboardEntry } from '../firebase/firebase';
 import '../styles/results.css';
 
+
+const DEFAULT_DISPLAY_NAME = 'Anonymous';
+
+function getDisplayName() {
+  return localStorage.getItem('oec_display_name') || DEFAULT_DISPLAY_NAME;
+}
+
+
 export default function Results() {
+
   const { state } = useLocation();
   const navigate = useNavigate();
   const [filter, setFilter] = useState('all');
@@ -11,12 +21,41 @@ export default function Results() {
   if (!state) { navigate('/'); return null; }
 
   const { answers = [], mode, summary } = state;
-  const correct = summary?.correct ?? answers.filter(a => a.isCorrect).length;
-  const wrong = summary?.wrong ?? answers.filter(a => !a.isCorrect).length;
+  const correct = summary?.correct ?? answers.filter((a) => a.isCorrect).length;
+  const wrong = summary?.wrong ?? answers.filter((a) => !a.isCorrect).length;
   const total = summary?.total ?? answers.length;
   const pct = total > 0 ? Math.round((correct / total) * 100) : 0;
   const grade = pct >= 90 ? 'A' : pct >= 80 ? 'B' : pct >= 70 ? 'C' : pct >= 60 ? 'D' : 'F';
   const gradeColor = pct >= 80 ? '#22c55e' : pct >= 60 ? '#f59e0b' : '#ef4444';
+
+  const submittedRef = useRef(false);
+  const defaultName = getDisplayName();
+
+  useEffect(() => {
+    if (!mode || submittedRef.current) return;
+    submittedRef.current = true;
+
+    // Anonymous display name (persisted locally)
+    const name = localStorage.getItem('oec_display_name') || defaultName;
+
+    // Firestore submission
+    (async () => {
+      try {
+        await submitLeaderboardEntry({
+          name,
+          mode,
+          scorePct: pct,
+          correct,
+          wrong,
+          total,
+        });
+      } catch (e) {
+        // Non-blocking: leaderboard should never break the app
+        console.warn('Leaderboard submit failed:', e);
+      }
+    })();
+  }, [mode, pct, correct, wrong, total, defaultName]);
+
 
   const modeLabels = { quiz: 'Quiz', practice: 'Practice', speed: 'Speed Round', weakness: 'Weakness Drill' };
   const modeLabel = modeLabels[mode] || 'Study';
