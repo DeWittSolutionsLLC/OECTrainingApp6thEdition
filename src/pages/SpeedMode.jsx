@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getQuestionsBySection, getSectionColor, shuffle } from '../data/oecData';
+import { recordAnswerForUser } from '../firebase/firebase';
+import { useAuth } from '../context/AuthContext';
 import '../styles/speed.css';
 
 const TIME_LIMIT = 10;
 
-function recordWeakness(question, chosen, isCorrect) {
+function recordLocalWeakness(question, chosen, isCorrect) {
   const stored = JSON.parse(localStorage.getItem('oec_weakness_data') || '{}');
   const key = `${question.sectionId}_${question.num}`;
   if (!stored[key]) stored[key] = { correct: 0, wrong: 0, question };
@@ -18,6 +20,7 @@ function recordWeakness(question, chosen, isCorrect) {
 export default function SpeedMode() {
   const { state } = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [session, setSession] = useState([]);
   const [index, setIndex] = useState(0);
@@ -25,7 +28,7 @@ export default function SpeedMode() {
   const [chosen, setChosen] = useState(null);
   const [locked, setLocked] = useState(false);
   const [answers, setAnswers] = useState([]);
-  const [flash, setFlash] = useState(null); // 'correct' | 'wrong'
+  const [flash, setFlash] = useState(null);
   const timerRef = useRef(null);
 
   useEffect(() => {
@@ -44,14 +47,26 @@ export default function SpeedMode() {
     clearInterval(timerRef.current);
 
     const isCorrect = chosenLetter === currentQ.answer;
-    recordWeakness(currentQ, chosenLetter, isCorrect);
+
+    // Always write locally
+    recordLocalWeakness(currentQ, chosenLetter, isCorrect);
+    // Also write to Firestore if logged in
+    if (user) {
+      recordAnswerForUser(user.uid, currentQ, isCorrect).catch(console.warn);
+    }
+
     setFlash(isCorrect ? 'correct' : 'wrong');
     setAnswers(prev => [...prev, { question: currentQ, chosen: chosenLetter, isCorrect }]);
 
     setTimeout(() => {
       setFlash(null);
       if (index + 1 >= session.length) {
-        navigate('/results', { state: { answers: [...answers, { question: currentQ, chosen: chosenLetter, isCorrect }], mode: 'speed' } });
+        navigate('/results', {
+          state: {
+            answers: [...answers, { question: currentQ, chosen: chosenLetter, isCorrect }],
+            mode: 'speed',
+          },
+        });
       } else {
         setIndex(i => i + 1);
         setChosen(null);
@@ -59,7 +74,7 @@ export default function SpeedMode() {
         setTimeLeft(TIME_LIMIT);
       }
     }, 600);
-  }, [currentQ, locked, index, session.length, answers, navigate]);
+  }, [currentQ, locked, index, session.length, answers, navigate, user]);
 
   // Countdown timer
   useEffect(() => {
@@ -68,7 +83,7 @@ export default function SpeedMode() {
       setTimeLeft(t => {
         if (t <= 1) {
           clearInterval(timerRef.current);
-          advance(null); // time expired
+          advance(null);
           return 0;
         }
         return t - 1;
