@@ -80,4 +80,72 @@
   .navbar { padding: 0 14px; height: 50px; }
   .navbar__edition { display: none; }
   .navbar__link { font-size: 0.75rem; padding: 4px 8px; }
+}/* --- Desktop Toggle Hidden --- */
+.navbar__toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: space-around;
+  width: 24px;
+  height: 18px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  z-index: 101;
+}
+
+.hamburger-line {
+  width: 24px;
+  height: 2px;
+  background-color: var(--text-primary);
+  border-radius: 10px;
+  transition: all 0.3s linear;
+}
+
+/* --- Mobile Logic --- */
+@media (max-width: 768px) {
+  .navbar__toggle {
+    display: flex;
+  }
+
+  /* Hamburger Animation to 'X' */
+  .navbar__toggle--open .hamburger-line:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+  .navbar__toggle--open .hamburger-line:nth-child(2) { opacity: 0; }
+  .navbar__toggle--open .hamburger-line:nth-child(3) { transform: rotate(-45deg) translate(7px, -7px); }
+
+  .navbar__links {
+    position: absolute;
+    top: 100%; /* Sits right below the navbar */
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    background: rgba(13, 16, 30, 0.98);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem;
+    gap: 8px;
+    
+    /* Hidden by default */
+    display: none;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.3s ease-in-out;
+  }
+
+  .navbar__links--open {
+    display: flex;
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .navbar__link {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 0.95rem;
+    border: 1px solid transparent;
+  }
+
+  .navbar__edition {
+    display: none;
+  }
 }
