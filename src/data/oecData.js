@@ -16,6 +16,35 @@ export function shuffle(arr) {
   return a;
 }
 
+const SEEN_KEY = 'oec_seen_counts';
+
+export function buildSmartSession(pool, count) {
+  const seen = JSON.parse(localStorage.getItem(SEEN_KEY) || '{}');
+
+  // Shuffle first so ties (same seen-count) are in random order
+  const shuffled = shuffle(pool);
+
+  // Stable sort: questions seen fewer times come first
+  shuffled.sort((a, b) => {
+    const ka = `${a.sectionId}_${a.num}`;
+    const kb = `${b.sectionId}_${b.num}`;
+    return (seen[ka] || 0) - (seen[kb] || 0);
+  });
+
+  const limit = count < shuffled.length ? count : shuffled.length;
+  const session = shuffled.slice(0, limit);
+
+  // Record that these questions were shown
+  const updated = { ...seen };
+  session.forEach(q => {
+    const key = `${q.sectionId}_${q.num}`;
+    updated[key] = (updated[key] || 0) + 1;
+  });
+  localStorage.setItem(SEEN_KEY, JSON.stringify(updated));
+
+  return session;
+}
+
 export function getQuestionsBySection(sectionIds) {
   // null/undefined = all sections
   if (sectionIds === null || sectionIds === undefined) {

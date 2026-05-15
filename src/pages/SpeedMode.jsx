@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { getQuestionsBySection, getSectionColor, shuffle } from '../data/oecData';
+import { getQuestionsBySection, getSectionColor, shuffle, buildSmartSession } from '../data/oecData';
 import { recordAnswerForUser } from '../firebase/firebase';
 import { useAuth } from '../context/AuthContext';
 import '../styles/speed.css';
@@ -34,10 +34,9 @@ export default function SpeedMode() {
 
   useEffect(() => {
     if (!state) { navigate('/setup/speed'); return; }
-    let pool = getQuestionsBySection(state.selectedSections);
-    pool = shuffle(pool);
+    const pool = getQuestionsBySection(state.selectedSections);
     const limit = state.count && state.count < pool.length ? state.count : pool.length;
-    setSession(pool.slice(0, limit));
+    setSession(buildSmartSession(pool, limit));
   }, [state, navigate]);
 
   const currentQ = session[index];

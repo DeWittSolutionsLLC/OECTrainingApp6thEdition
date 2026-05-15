@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import QuestionCard from '../components/QuestionCard';
 import ProgressBar from '../components/ProgressBar';
-import { getQuestionsBySection, shuffle } from '../data/oecData';
+import { getQuestionsBySection, shuffle, buildSmartSession } from '../data/oecData';
 import { recordAnswerForUser } from '../firebase/firebase';
 import { useAuth } from '../context/AuthContext';
 import '../styles/quiz.css';
@@ -31,9 +31,14 @@ export default function QuizMode() {
   useEffect(() => {
     if (!state) { navigate('/setup/quiz'); return; }
     let pool = getQuestionsBySection(state.selectedSections);
-    if (state.order === 'random') pool = shuffle(pool);
-    const limit = state.count && state.count < pool.length ? state.count : pool.length;
-    setSession(pool.slice(0, limit));
+    if (state.order === 'sequential') {
+      // Sequential: just slice, no smart tracking needed
+      const limit = state.count && state.count < pool.length ? state.count : pool.length;
+      setSession(pool.slice(0, limit));
+    } else {
+      const limit = state.count && state.count < pool.length ? state.count : pool.length;
+      setSession(buildSmartSession(pool, limit));
+    }
   }, [state, navigate]);
 
   useEffect(() => {
