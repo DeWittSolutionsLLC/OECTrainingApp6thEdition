@@ -1,16 +1,14 @@
-// pages/ProfilePage.jsx
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getUserSessions, getUserWeaknessData, clearUserWeaknessData } from '../firebase/firebase';
-import { logOut } from '../firebase/firebase';
+import { getUserSessions, getUserWeaknessData, clearUserWeaknessData, logOut } from '../firebase/firebase';
 import '../styles/profile.css';
 
 const MODE_LABELS = { quiz: 'Quiz', practice: 'Practice', speed: 'Speed Round', weakness: 'Weakness Drill' };
 const MODE_COLORS = { quiz: '#3b82f6', practice: '#22c55e', speed: '#ef4444', weakness: '#8b5cf6' };
 
 export default function ProfilePage() {
-  const { user, profile, refreshProfile, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
 
   const [sessions, setSessions] = useState([]);
@@ -50,15 +48,18 @@ export default function ProfilePage() {
     setClearConfirm(false);
   }
 
-  if (loading || !profile) {
-    return <div className="profile-loading">Loading…</div>;
-  }
+  // Only block render during Firebase auth init (very brief, <300ms typically)
+  if (loading) return <div className="profile-loading">Loading…</div>;
 
-  const overallPct = profile.totalQuestions > 0
+  // Use Auth user fields immediately — no Firestore wait needed for the header
+  const displayName = profile?.displayName || user?.displayName || '';
+  const email = profile?.email || user?.email || '';
+  const photoURL = profile?.photoURL || user?.photoURL || null;
+
+  const overallPct = profile?.totalQuestions > 0
     ? Math.round((profile.totalCorrect / profile.totalQuestions) * 100)
     : 0;
 
-  // Per-mode breakdown from sessions
   const byMode = {};
   sessions.forEach((s) => {
     if (!byMode[s.mode]) byMode[s.mode] = { sessions: 0, correct: 0, total: 0 };
@@ -71,43 +72,49 @@ export default function ProfilePage() {
     <div className="profile-page">
       <div className="profile-inner">
 
-        {/* Header */}
+        {/* Header renders immediately from Firebase Auth — no Firestore wait */}
         <div className="profile-header">
           <div className="profile-avatar">
-            {profile.photoURL
-              ? <img src={profile.photoURL} alt={profile.displayName} className="profile-avatar__img" />
-              : <span className="profile-avatar__initials">{(profile.displayName || 'A')[0].toUpperCase()}</span>
+            {photoURL
+              ? <img src={photoURL} alt={displayName} className="profile-avatar__img" />
+              : <span className="profile-avatar__initials">{(displayName || 'A')[0].toUpperCase()}</span>
             }
           </div>
           <div className="profile-identity">
-            <h1 className="profile-name">{profile.displayName}</h1>
-            <p className="profile-email">{profile.email}</p>
+            <h1 className="profile-name">{displayName}</h1>
+            <p className="profile-email">{email}</p>
           </div>
           <button className="profile-signout" onClick={handleSignOut}>Sign Out</button>
         </div>
 
-        {/* Aggregate stats */}
-        <div className="profile-stats">
-          <div className="p-stat">
-            <span className="p-stat__n">{profile.totalSessions}</span>
-            <span className="p-stat__l">Sessions</span>
+        {/* Stats — shimmer skeleton while Firestore profile loads */}
+        {!profile ? (
+          <div className="profile-stats">
+            {[0, 1, 2, 3].map(i => <div key={i} className="p-stat p-stat--skel" />)}
           </div>
-          <div className="p-stat">
-            <span className="p-stat__n p-stat__n--correct">{profile.totalCorrect}</span>
-            <span className="p-stat__l">Correct</span>
+        ) : (
+          <div className="profile-stats">
+            <div className="p-stat">
+              <span className="p-stat__n">{profile.totalSessions}</span>
+              <span className="p-stat__l">Sessions</span>
+            </div>
+            <div className="p-stat">
+              <span className="p-stat__n p-stat__n--correct">{profile.totalCorrect}</span>
+              <span className="p-stat__l">Correct</span>
+            </div>
+            <div className="p-stat">
+              <span className="p-stat__n p-stat__n--wrong">{profile.totalWrong}</span>
+              <span className="p-stat__l">Wrong</span>
+            </div>
+            <div className="p-stat">
+              <span className="p-stat__n p-stat__n--pct">{overallPct}%</span>
+              <span className="p-stat__l">Overall</span>
+            </div>
           </div>
-          <div className="p-stat">
-            <span className="p-stat__n p-stat__n--wrong">{profile.totalWrong}</span>
-            <span className="p-stat__l">Wrong</span>
-          </div>
-          <div className="p-stat">
-            <span className="p-stat__n p-stat__n--pct">{overallPct}%</span>
-            <span className="p-stat__l">Overall</span>
-          </div>
-        </div>
+        )}
 
-        {/* Mode breakdown */}
-        {Object.keys(byMode).length > 0 && (
+        {/* Mode breakdown — only shown once sessions are loaded */}
+        {!loadingSessions && Object.keys(byMode).length > 0 && (
           <div className="profile-section">
             <h2 className="profile-section__title">By Mode</h2>
             <div className="profile-modes">
@@ -131,7 +138,9 @@ export default function ProfilePage() {
         {/* Weakness list */}
         <div className="profile-section">
           <div className="profile-section__head">
-            <h2 className="profile-section__title">🔥 Weak Questions ({weakness.length})</h2>
+            <h2 className="profile-section__title">
+              🔥 Weak Questions ({loadingSessions ? '…' : weakness.length})
+            </h2>
             {weakness.length > 0 && (
               <button
                 className={`profile-clear ${clearConfirm ? 'profile-clear--confirm' : ''}`}
@@ -142,7 +151,11 @@ export default function ProfilePage() {
             )}
           </div>
 
-          {weakness.length === 0 ? (
+          {loadingSessions ? (
+            <div className="profile-skel-list">
+              {[0, 1, 2].map(i => <div key={i} className="p-skel-row" />)}
+            </div>
+          ) : weakness.length === 0 ? (
             <p className="profile-empty">No weak spots yet — keep practicing!</p>
           ) : (
             <div className="profile-weakness-list">
@@ -152,7 +165,7 @@ export default function ProfilePage() {
                 return (
                   <div key={i} className="p-weak">
                     <div className="p-weak__meta">
-                      <span className="p-weak__sec">§{w.question.sectionId} {w.question.sectionName}</span>
+                      <span className="p-weak__sec">S{w.question.sectionId} {w.question.sectionName}</span>
                       <span className="p-weak__rate" style={{ color: errRate > 66 ? '#ef4444' : errRate > 33 ? '#f59e0b' : '#22c55e' }}>
                         {errRate}% error
                       </span>
@@ -173,7 +186,9 @@ export default function ProfilePage() {
         <div className="profile-section">
           <h2 className="profile-section__title">Recent Sessions</h2>
           {loadingSessions ? (
-            <p className="profile-empty">Loading…</p>
+            <div className="profile-skel-list">
+              {[0, 1, 2, 3].map(i => <div key={i} className="p-skel-row p-skel-row--short" />)}
+            </div>
           ) : sessions.length === 0 ? (
             <p className="profile-empty">No sessions yet. Go study!</p>
           ) : (
@@ -202,6 +217,7 @@ export default function ProfilePage() {
             </button>
           )}
         </div>
+
       </div>
     </div>
   );

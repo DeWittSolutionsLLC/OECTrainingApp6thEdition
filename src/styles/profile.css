@@ -360,6 +360,39 @@
   background: rgba(139,92,246,0.25);
 }
 
+/* Skeleton shimmer */
+@keyframes skel-shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position: 600px 0; }
+}
+
+.p-stat--skel {
+  height: 80px;
+  border-radius: 0.75rem;
+  background: linear-gradient(90deg, #1a2235 25%, #243049 50%, #1a2235 75%);
+  background-size: 1200px 100%;
+  animation: skel-shimmer 1.5s infinite linear;
+  border: none;
+}
+
+.profile-skel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.p-skel-row {
+  height: 80px;
+  border-radius: 0.7rem;
+  background: linear-gradient(90deg, #1a2235 25%, #243049 50%, #1a2235 75%);
+  background-size: 1200px 100%;
+  animation: skel-shimmer 1.5s infinite linear;
+}
+
+.p-skel-row--short {
+  height: 48px;
+}
+
 @media (max-width: 520px) {
   .profile-stats {
     grid-template-columns: repeat(2, 1fr);
