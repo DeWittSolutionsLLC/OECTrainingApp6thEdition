@@ -23,7 +23,7 @@ export default function ProfilePage() {
     (async () => {
       try {
         const [s, w] = await Promise.all([
-          getUserSessions(user.uid, 15),
+          getUserSessions(user.uid, 500),
           getUserWeaknessData(user.uid),
         ]);
         setSessions(s);
@@ -56,16 +56,20 @@ export default function ProfilePage() {
   const email = profile?.email || user?.email || '';
   const photoURL = profile?.photoURL || user?.photoURL || null;
 
-  const overallPct = profile?.totalQuestions > 0
-    ? Math.round((profile.totalCorrect / profile.totalQuestions) * 100)
-    : 0;
+  // Derive stats from the sessions subcollection — authoritative even if user-doc
+  // aggregates are stale/zero (they may not have been written in older app versions).
+  const statSessions  = sessions.length;
+  const statCorrect   = sessions.reduce((n, s) => n + (s.correct || 0), 0);
+  const statWrong     = sessions.reduce((n, s) => n + (s.wrong   || 0), 0);
+  const statTotal     = sessions.reduce((n, s) => n + (s.total   || 0), 0);
+  const overallPct    = statTotal > 0 ? Math.round((statCorrect / statTotal) * 100) : 0;
 
   const byMode = {};
   sessions.forEach((s) => {
     if (!byMode[s.mode]) byMode[s.mode] = { sessions: 0, correct: 0, total: 0 };
     byMode[s.mode].sessions++;
-    byMode[s.mode].correct += s.correct;
-    byMode[s.mode].total += s.total;
+    byMode[s.mode].correct += s.correct || 0;
+    byMode[s.mode].total   += s.total   || 0;
   });
 
   return (
@@ -87,23 +91,23 @@ export default function ProfilePage() {
           <button className="profile-signout" onClick={handleSignOut}>Sign Out</button>
         </div>
 
-        {/* Stats — shimmer skeleton while Firestore profile loads */}
-        {!profile ? (
+        {/* Stats — derived from sessions subcollection, skeleton while loading */}
+        {loadingSessions ? (
           <div className="profile-stats">
             {[0, 1, 2, 3].map(i => <div key={i} className="p-stat p-stat--skel" />)}
           </div>
         ) : (
           <div className="profile-stats">
             <div className="p-stat">
-              <span className="p-stat__n">{profile.totalSessions}</span>
+              <span className="p-stat__n">{statSessions}</span>
               <span className="p-stat__l">Sessions</span>
             </div>
             <div className="p-stat">
-              <span className="p-stat__n p-stat__n--correct">{profile.totalCorrect}</span>
+              <span className="p-stat__n p-stat__n--correct">{statCorrect}</span>
               <span className="p-stat__l">Correct</span>
             </div>
             <div className="p-stat">
-              <span className="p-stat__n p-stat__n--wrong">{profile.totalWrong}</span>
+              <span className="p-stat__n p-stat__n--wrong">{statWrong}</span>
               <span className="p-stat__l">Wrong</span>
             </div>
             <div className="p-stat">
@@ -193,7 +197,7 @@ export default function ProfilePage() {
             <p className="profile-empty">No sessions yet. Go study!</p>
           ) : (
             <div className="profile-sessions">
-              {sessions.map((s) => (
+              {sessions.slice(0, 15).map((s) => (
                 <div key={s.id} className="p-session" style={{ '--mode-color': MODE_COLORS[s.mode] || '#64748b' }}>
                   <div className="p-session__mode">{MODE_LABELS[s.mode] || s.mode}</div>
                   <div className="p-session__score">{s.scorePct}%</div>
