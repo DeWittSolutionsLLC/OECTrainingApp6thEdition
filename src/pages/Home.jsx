@@ -67,9 +67,55 @@ export default function Home() {
 
       <div className="home__hero">
         <div className="home__hero-bg" aria-hidden="true">
-          {Array.from({ length: 18 }).map((_, i) => (
-            <span key={i} className="home__snowflake" style={{ '--i': i }}>❄</span>
+
+          {/* Twinkling background stars */}
+          {Array.from({ length: 40 }).map((_, i) => (
+            <span
+              key={`star-${i}`}
+              className="home__star"
+              style={{
+                left: `${(i * 97 + 11) % 100}%`,
+                top:  `${(i * 61 + 7)  % 65}%`,
+                '--sd': `${((i * 0.8) % 3).toFixed(1)}s`,
+                '--ss': `${0.8 + (i % 4) * 0.15}`,
+              }}
+            />
           ))}
+
+          {/* Falling snow — mix of flake and sparkle characters */}
+          {Array.from({ length: 28 }).map((_, i) => (
+            <span key={i} className="home__snowflake" style={{ '--i': i }}>
+              {i % 7 === 0 ? '✦' : i % 11 === 0 ? '·' : '❄'}
+            </span>
+          ))}
+
+          {/* Mountain + pine tree silhouette */}
+          <svg className="home__mountains" viewBox="0 0 1440 220" preserveAspectRatio="none">
+            {/* Back mountain range */}
+            <polygon points="0,220 180,75 360,220"    fill="#07101f" />
+            <polygon points="220,220 500,10 780,220"  fill="#081221" />
+            <polygon points="560,220 840,45 1120,220" fill="#07101f" />
+            <polygon points="850,220 1110,25 1370,220" fill="#081221" />
+            <polygon points="1100,220 1290,80 1440,220" fill="#07101f" />
+
+            {/* Snow caps */}
+            <polygon points="430,55 500,10 570,55"   fill="rgba(255,255,255,0.06)" />
+            <polygon points="770,40 840,0  910,40"   fill="rgba(255,255,255,0.06)" />
+            <polygon points="1040,70 1110,25 1180,70" fill="rgba(255,255,255,0.06)" />
+
+            {/* Pine tree layer */}
+            {[40,90,140,200,280,360,440,530,650,760,870,960,1060,1150,1240,1340,1400].map((x, i) => {
+              const h  = 28 + (i % 3) * 10;
+              const hw = 9  + (i % 3) * 3;
+              return (
+                <g key={i} fill="#050d1a">
+                  <polygon points={`${x-hw},220 ${x},${220-h} ${x+hw},220`} />
+                  <polygon points={`${x-hw*0.7},${220-h*0.55} ${x},${220-h*1.25} ${x+hw*0.7},${220-h*0.55}`} />
+                </g>
+              );
+            })}
+          </svg>
+
         </div>
         <div className="home__hero-content">
           <h1 className="home__title">OEC Study Guide</h1>

@@ -18,21 +18,49 @@
 
 .home__snowflake {
   position: absolute;
-  color: #3b82f6;
+  color: #bfdbfe;
   font-size: 1.2rem;
   opacity: 0;
   animation: snowfall 8s linear infinite;
   animation-delay: calc(var(--i) * 0.45s);
+  text-shadow: 0 0 8px rgba(147,197,253,0.6);
 }
 
-.home__snowflake:nth-child(odd) { color: #8b5cf6; font-size: 0.9rem; }
-.home__snowflake:nth-child(3n) { color: #14b8a6; font-size: 1.5rem; }
+.home__snowflake:nth-child(odd)  { color: #ddd6fe; font-size: 0.9rem; text-shadow: 0 0 6px rgba(196,181,253,0.5); }
+.home__snowflake:nth-child(3n)   { color: #a5f3fc; font-size: 1.5rem; text-shadow: 0 0 10px rgba(103,232,249,0.6); }
+.home__snowflake:nth-child(7n)   { color: #fef9c3; font-size: 0.75rem; }
 
 @keyframes snowfall {
-  0%  { opacity: 0; transform: translateY(-20px) translateX(calc(var(--i) * 5.5vw - 40vw)); }
-  10% { opacity: 0.25; }
-  90% { opacity: 0.1; }
-  100%{ opacity: 0; transform: translateY(300px) translateX(calc(var(--i) * 5.5vw - 40vw + 20px)); }
+  0%   { opacity: 0;    transform: translateY(-20px)  translateX(calc(var(--i) * 3.6vw - 40vw)); }
+  8%   { opacity: 0.75; }
+  88%  { opacity: 0.4;  }
+  100% { opacity: 0;    transform: translateY(340px)  translateX(calc(var(--i) * 3.6vw - 40vw + 24px)); }
+}
+
+/* Twinkling stars */
+.home__star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: #e2e8f0;
+  border-radius: 50%;
+  animation: twinkle calc(2.2s + var(--sd, 0s)) ease-in-out infinite alternate;
+  transform: scale(var(--ss, 1));
+}
+
+@keyframes twinkle {
+  from { opacity: 0.08; }
+  to   { opacity: 0.65; }
+}
+
+/* Mountain + pine silhouette */
+.home__mountains {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 220px;
+  pointer-events: none;
 }
 
 .home__hero-content { position: relative; z-index: 1; }
