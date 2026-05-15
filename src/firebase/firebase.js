@@ -105,6 +105,27 @@ export async function getUserProfile(uid) {
   return snap.exists() ? snap.data() : null;
 }
 
+export async function getOrCreateUserProfile(firebaseUser) {
+  const ref = doc(db, 'users', firebaseUser.uid);
+  const snap = await getDoc(ref);
+  if (snap.exists()) return snap.data();
+
+  const data = {
+    uid: firebaseUser.uid,
+    displayName: firebaseUser.displayName || 'Anonymous',
+    email: firebaseUser.email || '',
+    photoURL: firebaseUser.photoURL || '',
+    createdAt: serverTimestamp(),
+    totalSessions: 0,
+    totalCorrect: 0,
+    totalWrong: 0,
+    totalQuestions: 0,
+  };
+  await setDoc(ref, data);
+  const fresh = await getDoc(ref);
+  return fresh.data();
+}
+
 export async function updateUserProfile(uid, updates) {
   const ref = doc(db, 'users', uid);
   await updateDoc(ref, updates);

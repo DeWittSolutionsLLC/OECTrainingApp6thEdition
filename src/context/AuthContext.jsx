@@ -1,6 +1,6 @@
 // context/AuthContext.jsx
 import { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthChange, getUserProfile } from '../firebase/firebase';
+import { onAuthChange, getUserProfile, getOrCreateUserProfile } from '../firebase/firebase';
 
 const AuthContext = createContext(null);
 
@@ -12,7 +12,7 @@ export function AuthProvider({ children }) {
     const unsub = onAuthChange(async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {
-        const p = await getUserProfile(firebaseUser.uid);
+        const p = await getOrCreateUserProfile(firebaseUser);
         setProfile(p);
       } else {
         setProfile(null);

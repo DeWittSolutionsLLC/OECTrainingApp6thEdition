@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getSectionColor } from '../data/oecData';
-import { submitLeaderboardEntry, saveSession } from '../firebase/firebase';
+import { saveSession } from '../firebase/firebase';
 import { useAuth } from '../context/AuthContext';
 import '../styles/results.css';
 
@@ -36,26 +36,13 @@ export default function Results() {
 
     const name = getDisplayName(profile, user);
 
+    if (!user) return;
     (async () => {
       try {
-        // Leaderboard entry (all users)
-        await submitLeaderboardEntry({
-          uid: user?.uid || null,
-          name,
-          mode,
-          scorePct: pct,
-          correct,
-          wrong,
-          total,
-        });
-
-        // Per-user session history (authenticated only)
-        if (user) {
-          await saveSession(user.uid, { mode, correct, wrong, total, scorePct: pct });
-          await refreshProfile(); // update aggregate stats in context
-        }
+        await saveSession(user.uid, { mode, correct, wrong, total, scorePct: pct });
+        await refreshProfile();
       } catch (e) {
-        console.warn('Post-session save failed:', e);
+        console.warn('Session save failed:', e);
       }
     })();
   }, [mode, pct, correct, wrong, total, user, profile]);
@@ -152,7 +139,7 @@ export default function Results() {
                 return (
                   <div key={i} className={`rr-item ${a.isCorrect ? 'rr-item--correct' : 'rr-item--wrong'}`}>
                     <div className="rr-item__meta">
-                      <span className="rr-item__sec" style={{ color }}>§{a.question.sectionId} {a.question.sectionName}</span>
+                      <span className="rr-item__sec" style={{ color }}>S{a.question.sectionId} {a.question.sectionName}</span>
                       <span className={`rr-item__badge ${a.isCorrect ? 'rr-item__badge--ok' : 'rr-item__badge--err'}`}>
                         {a.isCorrect ? '✓' : '✗'}
                       </span>
