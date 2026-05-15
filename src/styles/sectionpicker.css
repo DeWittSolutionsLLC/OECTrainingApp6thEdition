@@ -59,7 +59,11 @@
   border-color: color-mix(in srgb, var(--chip-color) 50%, transparent);
 }
 
-.sp__chip--off { opacity: 0.38; }
+.sp__chip--off {
+  opacity: 0.62;
+  background: var(--bg-surface);
+  border-color: var(--border);
+}
 
 .sp__chip-num {
   font-size: 0.7rem;

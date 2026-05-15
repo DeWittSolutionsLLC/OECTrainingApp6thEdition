@@ -5,7 +5,6 @@ import { recordAnswerForUser } from '../firebase/firebase';
 import { useAuth } from '../context/AuthContext';
 import '../styles/speed.css';
 
-const TIME_LIMIT = 10;
 
 function recordLocalWeakness(question, chosen, isCorrect) {
   const stored = JSON.parse(localStorage.getItem('oec_weakness_data') || '{}');
@@ -22,6 +21,8 @@ export default function SpeedMode() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  const TIME_LIMIT = state?.timer ?? 10;
+
   const [session, setSession] = useState([]);
   const [index, setIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(TIME_LIMIT);
@@ -35,7 +36,7 @@ export default function SpeedMode() {
     if (!state) { navigate('/setup/speed'); return; }
     let pool = getQuestionsBySection(state.selectedSections);
     pool = shuffle(pool);
-    const limit = state.count && state.count < pool.length ? state.count : Math.min(pool.length, 20);
+    const limit = state.count && state.count < pool.length ? state.count : pool.length;
     setSession(pool.slice(0, limit));
   }, [state, navigate]);
 
@@ -136,7 +137,7 @@ export default function SpeedMode() {
 
         <div className="speed-card">
           <span className="speed-pill" style={{ background: `${color}22`, color, border: `1px solid ${color}44` }}>
-            §{currentQ.sectionId} — {currentQ.sectionName}
+            S{currentQ.sectionId} — {currentQ.sectionName}
           </span>
           <p className="speed-question">{currentQ.text}</p>
         </div>

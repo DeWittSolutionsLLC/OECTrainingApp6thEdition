@@ -15,7 +15,7 @@ export default function QuestionCard({
     <div className="qc">
       <div className="qc__meta">
         <span className="qc__pill" style={{ background: `${color}20`, color, border: `1px solid ${color}40` }}>
-          §{question.sectionId} — {question.sectionName}
+          S{question.sectionId} — {question.sectionName}
         </span>
         <span className="qc__num">Q{question.num}</span>
       </div>

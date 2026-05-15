@@ -36,7 +36,7 @@ const MODES = [
     id: 'speed',
     icon: '⚡',
     title: 'Speed Round',
-    subtitle: '10 seconds per question',
+    subtitle: 'Adjustable timer per question',
     desc: 'Race against the clock. Answer before time runs out or the question is marked wrong.',
     color: '#ef4444',
     path: '/setup/speed',
@@ -72,7 +72,7 @@ export default function Home() {
           ))}
         </div>
         <div className="home__hero-content">
-          <h1 className="home__title">OEC Study</h1>
+          <h1 className="home__title">OEC Study Guide</h1>
           <p className="home__edition">National Ski Patrol · 6th Edition Test Bank</p>
           <div className="home__stats">
             <div className="home__stat">

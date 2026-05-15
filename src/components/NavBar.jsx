@@ -17,7 +17,11 @@ export default function NavBar() {
   return (
     <header className={`navbar ${isHome ? 'navbar--home' : ''}`}>
       <Link to="/" className="navbar__brand">
-        <span className="navbar__flake" aria-hidden="true">🛟</span>
+        <svg className="navbar__flake" width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="14" cy="14" r="14" fill="#e63946"/>
+          <rect x="6" y="12" width="16" height="4" rx="1.5" fill="white"/>
+          <rect x="12" y="6" width="4" height="16" rx="1.5" fill="white"/>
+        </svg>
         <span className="navbar__title">Mt. Holly OEC</span>
         <span className="navbar__edition">6th Ed.</span>
       </Link>
@@ -43,7 +47,6 @@ export default function NavBar() {
           <Link to="/setup/flashcards" onClick={() => setIsOpen(false)} className={`navbar__link ${pathname.includes('flash') ? 'navbar__link--active' : ''}`}>Flashcards</Link>
           <Link to="/setup/speed" onClick={() => setIsOpen(false)} className={`navbar__link ${pathname.includes('speed') ? 'navbar__link--active' : ''}`}>Speed</Link>
           <Link to="/setup/weakness" onClick={() => setIsOpen(false)} className={`navbar__link ${pathname.includes('weakness') ? 'navbar__link--active' : ''}`}>Weakness</Link>
-          <Link to="/leaderboard" onClick={() => setIsOpen(false)} className={`navbar__link ${pathname.includes('leaderboard') ? 'navbar__link--active' : ''}`}>Leaderboard</Link>
         </div>
 
         <div className="navbar__auth">

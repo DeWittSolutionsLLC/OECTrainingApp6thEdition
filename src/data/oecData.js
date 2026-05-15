@@ -1,45 +1,10 @@
 // OEC 6th Edition — 822 Questions, 34 Sections
 // Auto-generated from OEC_6th_Edition_Study_Guide_822.pdf
 
-export const SECTION_COLORS = [
-  "#e63946",  // Section 1
-  "#e76f51",  // Section 2
-  "#f4a261",  // Section 3
-  "#e9c46a",  // Section 4
-  "#a8dadc",  // Section 5
-  "#457b9d",  // Section 6
-  "#1d3557",  // Section 7
-  "#2a9d8f",  // Section 8
-  "#264653",  // Section 9
-  "#8338ec",  // Section 10
-  "#3a86ff",  // Section 11
-  "#06d6a0",  // Section 12
-  "#118ab2",  // Section 13
-  "#073b4c",  // Section 14
-  "#ffb703",  // Section 15
-  "#fb8500",  // Section 16
-  "#6a994e",  // Section 17
-  "#a7c957",  // Section 18
-  "#bc4749",  // Section 19
-  "#386641",  // Section 20
-  "#6c584c",  // Section 21
-  "#a98467",  // Section 22
-  "#dde5b6",  // Section 23
-  "#adc178",  // Section 24
-  "#9b2335",  // Section 25
-  "#5c4033",  // Section 26
-  "#7b2d8b",  // Section 27
-  "#c77dff",  // Section 28
-  "#48cae4",  // Section 29
-  "#0096c7",  // Section 30
-  "#023e8a",  // Section 31
-  "#ff006e",  // Section 32
-  "#8338ec",  // Section 33
-  "#fb5607",  // Section 34
-];
+const SECTION_COLOR = "#e63946";
 
-export function getSectionColor(sectionId) {
-  return SECTION_COLORS[(sectionId - 1) % SECTION_COLORS.length];
+export function getSectionColor(_sectionId) {
+  return SECTION_COLOR;
 }
 
 export function shuffle(arr) {

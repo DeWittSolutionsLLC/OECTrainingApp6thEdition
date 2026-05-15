@@ -37,7 +37,7 @@ const MODE_META = {
     color: '#ef4444',
     showOrder: true,
     showCount: true,
-    desc: 'You have 10 seconds per question. Unanswered = wrong.',
+    desc: 'Race against the clock. Set your time limit — unanswered questions are marked wrong.',
   },
   weakness: {
     icon: '🔥',
@@ -57,7 +57,8 @@ export default function QuizSetup() {
 
   const [selectedSections, setSelectedSections] = useState(null);
   const [order, setOrder] = useState('random');
-  const [count, setCount] = useState(20);
+  const [count, setCount] = useState(9999);
+  const [timer, setTimer] = useState(10);
 
   const isWeakness = mode === 'weakness';
 
@@ -74,7 +75,7 @@ export default function QuizSetup() {
   }, [isWeakness, user]);
 
   function handleStart() {
-    const state = { selectedSections, order, count: parseInt(count, 10) };
+    const state = { selectedSections, order, count: parseInt(count, 10), timer };
     navigate(`/${mode}`, { state });
   }
 
@@ -149,6 +150,17 @@ export default function QuizSetup() {
                     <button key={n} className={`setup__seg-btn ${count === n ? 'setup__seg-btn--active' : ''}`} onClick={() => setCount(n)}>{n}</button>
                   ))}
                   <button className={`setup__seg-btn ${count === 9999 ? 'setup__seg-btn--active' : ''}`} onClick={() => setCount(9999)}>All</button>
+                </div>
+              </div>
+            )}
+
+            {mode === 'speed' && (
+              <div className="setup__field">
+                <label className="setup__label">Time Per Question</label>
+                <div className="setup__seg">
+                  {[5, 10, 15, 20, 30].map(t => (
+                    <button key={t} className={`setup__seg-btn ${timer === t ? 'setup__seg-btn--active' : ''}`} onClick={() => setTimer(t)}>{t}s</button>
+                  ))}
                 </div>
               </div>
             )}

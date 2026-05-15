@@ -9,7 +9,6 @@ import SpeedMode     from './pages/SpeedMode';
 import WeaknessMode  from './pages/WeaknessMode';
 import QuizSetup     from './pages/QuizSetup';
 import Results       from './pages/Results';
-import Leaderboard   from './pages/Leaderboard';
 import AuthPage      from './pages/AuthPage';
 import ProfilePage   from './pages/ProfilePage';
 import NavBar        from './components/NavBar';
@@ -32,7 +31,6 @@ export default function App() {
           <Route path="/speed"       element={<SpeedMode />} />
           <Route path="/weakness"    element={<WeaknessMode />} />
           <Route path="/results"     element={<Results />} />
-          <Route path="/leaderboard" element={<Leaderboard />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

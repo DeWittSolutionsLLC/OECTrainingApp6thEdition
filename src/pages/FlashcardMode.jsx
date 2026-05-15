@@ -110,7 +110,7 @@ export default function FlashcardMode() {
         <div className={`fc-card ${flipped ? 'fc-card--flipped' : ''}`} onClick={handleFlip}>
           <div className="fc-card__front">
             <span className="fc-card__pill" style={{ background: `${color}22`, color, border: `1px solid ${color}44` }}>
-              §{currentQ.sectionId} — {currentQ.sectionName}
+              S{currentQ.sectionId} — {currentQ.sectionName}
             </span>
             <p className="fc-card__question">{currentQ.text}</p>
             <span className="fc-card__hint">Tap or press Space to flip</span>
