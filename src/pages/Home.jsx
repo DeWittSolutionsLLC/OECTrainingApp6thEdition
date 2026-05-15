@@ -1,8 +1,16 @@
 // pages/Home.jsx  (updated — replaces your existing Home.jsx)
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getWeaknessDataSync } from '../hooks/useSession';
 import '../styles/home.css';
+
+const SNOWFLAKES = Array.from({ length: 28 }, (_, i) => ({
+  char: i % 7 === 0 ? '✦' : i % 11 === 0 ? '·' : '❄',
+  x:    2 + (i * 97 + 31) % 95,          // spread 2–97%, deterministic so no re-render shift
+  dur:  6  + (i * 13 + 5) % 7,           // 6–12 s
+  del:  0  + (i * 37 + 3) % 10,          // 0–9 s stagger
+}));
 
 const MODES = [
   {
@@ -82,10 +90,18 @@ export default function Home() {
             />
           ))}
 
-          {/* Falling snow — mix of flake and sparkle characters */}
-          {Array.from({ length: 28 }).map((_, i) => (
-            <span key={i} className="home__snowflake" style={{ '--i': i }}>
-              {i % 7 === 0 ? '✦' : i % 11 === 0 ? '·' : '❄'}
+          {/* Falling snow — randomly scattered positions, durations, delays */}
+          {SNOWFLAKES.map((flake, i) => (
+            <span
+              key={i}
+              className="home__snowflake"
+              style={{
+                left:              `${flake.x}%`,
+                animationDuration: `${flake.dur}s`,
+                animationDelay:    `${flake.del}s`,
+              }}
+            >
+              {flake.char}
             </span>
           ))}
 

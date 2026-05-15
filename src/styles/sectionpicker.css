@@ -75,7 +75,7 @@
 
 .sp__chip-name {
   font-size: 0.74rem;
-  color: var(--text-secondary);
+  color: var(--text-primary);
   flex: 1;
   white-space: nowrap;
   overflow: hidden;
