@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import QuestionCard from '../components/QuestionCard';
 import ProgressBar from '../components/ProgressBar';
 import { shuffle } from '../data/oecData';
-import { recordAnswerForUser, getUserWeaknessData, clearUserWeaknessData, clearSingleWeaknessEntry } from '../firebase/firebase';
+import { recordAnswerForUser, getUserWeaknessData, clearUserWeaknessData, clearSingleWeaknessEntry, saveQuizProgress, loadQuizProgress, clearQuizProgress } from '../firebase/firebase';
 import { useAuth } from '../context/AuthContext';
 import { saveProgress, loadProgress, clearProgress } from '../utils/quizProgress';
 import '../styles/weakness.css';
@@ -46,7 +46,8 @@ function recordLocalWeakness(question, isCorrect) {
 
 export default function WeaknessMode() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const initDoneRef = useRef(false);
 
   const [session, setSession] = useState([]);
   const [index, setIndex] = useState(0);
@@ -60,8 +61,19 @@ export default function WeaknessMode() {
   const [questionStats, setQuestionStats] = useState({});
 
   useEffect(() => {
+    if (authLoading || initDoneRef.current) return;
+    initDoneRef.current = true;
+
     async function loadSession() {
-      const saved = loadProgress('weakness');
+      // Try localStorage first
+      let saved = loadProgress('weakness');
+
+      // Try Firestore if no local progress and user is logged in
+      if (!saved?.session?.length && user) {
+        const cloud = await loadQuizProgress(user.uid, 'weakness').catch(() => null);
+        if (cloud?.session?.length) { saved = cloud; saveProgress('weakness', cloud); }
+      }
+
       if (saved?.session?.length) {
         setSession(saved.session);
         setIndex(saved.index ?? 0);
@@ -92,12 +104,19 @@ export default function WeaknessMode() {
       setLoading(false);
     }
     loadSession();
-  }, [user, navigate]);
+  }, [user, navigate, authLoading]);
 
+  // localStorage auto-save
   useEffect(() => {
     if (session.length === 0) return;
     saveProgress('weakness', { session, index, correct, wrong, masteredCount, questionStats });
   }, [session, index, correct, wrong, masteredCount, questionStats]);
+
+  // Firestore save on question advance
+  useEffect(() => {
+    if (session.length === 0 || !user) return;
+    saveQuizProgress(user.uid, 'weakness', { session, index, correct, wrong, masteredCount, questionStats }).catch(console.warn);
+  }, [session, index, user]);
 
   useEffect(() => {
     function onKey(e) {
@@ -153,6 +172,7 @@ export default function WeaknessMode() {
     setJustMastered(false);
     if (index + 1 >= session.length) {
       clearProgress('weakness');
+      if (user) clearQuizProgress(user.uid, 'weakness').catch(console.warn);
       navigate('/results', {
         state: {
           answers: [],
@@ -170,6 +190,7 @@ export default function WeaknessMode() {
   async function handleClear() {
     if (user) {
       await clearUserWeaknessData(user.uid).catch(console.warn);
+      await clearQuizProgress(user.uid, 'weakness').catch(console.warn);
     }
     localStorage.removeItem(LOCAL_KEY);
     clearProgress('weakness');

@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import QuestionCard from '../components/QuestionCard';
 import ProgressBar from '../components/ProgressBar';
 import { getQuestionsBySection, shuffle } from '../data/oecData';
-import { recordAnswerForUser } from '../firebase/firebase';
+import { recordAnswerForUser, saveQuizProgress, loadQuizProgress, clearQuizProgress } from '../firebase/firebase';
 import { useAuth } from '../context/AuthContext';
 import { saveProgress, loadProgress, clearProgress } from '../utils/quizProgress';
 import '../styles/practice.css';
@@ -21,7 +21,8 @@ function recordLocalWeakness(question, isCorrect) {
 export default function PracticeMode() {
   const { state } = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  const initDoneRef = useRef(false);
 
   const [session, setSession] = useState([]);
   const [index, setIndex] = useState(0);
@@ -33,34 +34,52 @@ export default function PracticeMode() {
   const [answers, setAnswers] = useState([]);
 
   useEffect(() => {
-    if (!state) {
-      const saved = loadProgress('practice');
-      if (saved?.session?.length) {
-        setSession(saved.session);
-        setIndex(saved.index ?? 0);
-        setAnswers(saved.answers ?? []);
-        setCorrect(saved.correct ?? 0);
-        setWrong(saved.wrong ?? 0);
-        setSkipped(saved.skipped ?? 0);
-        if (saved.confirmedChosen) {
-          setChosen(saved.confirmedChosen);
-          setConfirmed(true);
-        }
-        return;
-      }
-      navigate('/setup/practice');
-      return;
-    }
-    clearProgress('practice');
-    let pool = getQuestionsBySection(state.selectedSections);
-    if (state.order === 'random') pool = shuffle(pool);
-    setSession(pool);
-  }, [state, navigate]);
+    if (loading || initDoneRef.current) return;
+    initDoneRef.current = true;
 
+    async function init() {
+      const isReload = performance.getEntriesByType('navigation')[0]?.type === 'reload';
+
+      if (isReload || !state) {
+        let saved = loadProgress('practice');
+        if (!saved?.session?.length && user) {
+          const cloud = await loadQuizProgress(user.uid, 'practice').catch(() => null);
+          if (cloud?.session?.length) { saved = cloud; saveProgress('practice', cloud); }
+        }
+        if (saved?.session?.length) {
+          setSession(saved.session);
+          setIndex(saved.index ?? 0);
+          setAnswers(saved.answers ?? []);
+          setCorrect(saved.correct ?? 0);
+          setWrong(saved.wrong ?? 0);
+          setSkipped(saved.skipped ?? 0);
+          if (saved.confirmedChosen) { setChosen(saved.confirmedChosen); setConfirmed(true); }
+          return;
+        }
+        if (!state) { navigate('/setup/practice'); return; }
+      }
+
+      clearProgress('practice');
+      if (user) clearQuizProgress(user.uid, 'practice').catch(console.warn);
+      let pool = getQuestionsBySection(state.selectedSections);
+      if (state.order === 'random') pool = shuffle(pool);
+      setSession(pool);
+    }
+
+    init();
+  }, [state, navigate, user, loading]);
+
+  // localStorage auto-save on every change
   useEffect(() => {
     if (session.length === 0) return;
     saveProgress('practice', { session, index, answers, correct, wrong, skipped, confirmedChosen: confirmed ? chosen : null });
   }, [session, index, answers, correct, wrong, skipped, confirmed, chosen]);
+
+  // Firestore save on meaningful checkpoints
+  useEffect(() => {
+    if (session.length === 0 || !user) return;
+    saveQuizProgress(user.uid, 'practice', { session, index, answers, correct, wrong, skipped, confirmedChosen: confirmed ? chosen : null }).catch(console.warn);
+  }, [session, index, confirmed, user]);
 
   useEffect(() => {
     function onKey(e) {
@@ -94,6 +113,7 @@ export default function PracticeMode() {
   function handleNext() {
     if (index + 1 >= session.length) {
       clearProgress('practice');
+      if (user) clearQuizProgress(user.uid, 'practice').catch(console.warn);
       navigate('/results', {
         state: {
           answers: [...answers],

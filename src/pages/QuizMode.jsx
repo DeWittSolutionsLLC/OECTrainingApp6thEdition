@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import QuestionCard from '../components/QuestionCard';
 import ProgressBar from '../components/ProgressBar';
 import { getQuestionsBySection, shuffle, buildSmartSession } from '../data/oecData';
-import { recordAnswerForUser } from '../firebase/firebase';
+import { recordAnswerForUser, saveQuizProgress, loadQuizProgress, clearQuizProgress } from '../firebase/firebase';
 import { useAuth } from '../context/AuthContext';
 import { saveProgress, loadProgress, clearProgress } from '../utils/quizProgress';
 import '../styles/quiz.css';
@@ -21,7 +21,8 @@ function recordLocalWeakness(question, isCorrect) {
 export default function QuizMode() {
   const { state } = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  const initDoneRef = useRef(false);
 
   const [session, setSession] = useState([]);
   const [index, setIndex] = useState(0);
@@ -30,38 +31,56 @@ export default function QuizMode() {
   const [answers, setAnswers] = useState([]);
 
   useEffect(() => {
-    if (!state) {
-      const saved = loadProgress('quiz');
-      if (saved?.session?.length) {
-        setSession(saved.session);
-        setIndex(saved.index ?? 0);
-        setAnswers(saved.answers ?? []);
-        if (saved.confirmedChosen) {
-          setChosen(saved.confirmedChosen);
-          setConfirmed(true);
-        }
-        return;
-      }
-      navigate('/setup/quiz');
-      return;
-    }
-    clearProgress('quiz');
-    let pool = getQuestionsBySection(state.selectedSections);
-    let sess;
-    if (state.order === 'sequential') {
-      const limit = state.count && state.count < pool.length ? state.count : pool.length;
-      sess = pool.slice(0, limit);
-    } else {
-      const limit = state.count && state.count < pool.length ? state.count : pool.length;
-      sess = buildSmartSession(pool, limit);
-    }
-    setSession(sess);
-  }, [state, navigate]);
+    if (loading || initDoneRef.current) return;
+    initDoneRef.current = true;
 
+    async function init() {
+      const isReload = performance.getEntriesByType('navigation')[0]?.type === 'reload';
+
+      if (isReload || !state) {
+        let saved = loadProgress('quiz');
+        if (!saved?.session?.length && user) {
+          const cloud = await loadQuizProgress(user.uid, 'quiz').catch(() => null);
+          if (cloud?.session?.length) { saved = cloud; saveProgress('quiz', cloud); }
+        }
+        if (saved?.session?.length) {
+          setSession(saved.session);
+          setIndex(saved.index ?? 0);
+          setAnswers(saved.answers ?? []);
+          if (saved.confirmedChosen) { setChosen(saved.confirmedChosen); setConfirmed(true); }
+          return;
+        }
+        if (!state) { navigate('/setup/quiz'); return; }
+      }
+
+      clearProgress('quiz');
+      if (user) clearQuizProgress(user.uid, 'quiz').catch(console.warn);
+      let pool = getQuestionsBySection(state.selectedSections);
+      let sess;
+      if (state.order === 'sequential') {
+        const limit = state.count && state.count < pool.length ? state.count : pool.length;
+        sess = pool.slice(0, limit);
+      } else {
+        const limit = state.count && state.count < pool.length ? state.count : pool.length;
+        sess = buildSmartSession(pool, limit);
+      }
+      setSession(sess);
+    }
+
+    init();
+  }, [state, navigate, user, loading]);
+
+  // localStorage auto-save on every change
   useEffect(() => {
     if (session.length === 0) return;
     saveProgress('quiz', { session, index, answers, confirmedChosen: confirmed ? chosen : null });
   }, [session, index, answers, confirmed, chosen]);
+
+  // Firestore save on meaningful checkpoints (confirm/advance)
+  useEffect(() => {
+    if (session.length === 0 || !user) return;
+    saveQuizProgress(user.uid, 'quiz', { session, index, answers, confirmedChosen: confirmed ? chosen : null }).catch(console.warn);
+  }, [session, index, confirmed, user]);
 
   useEffect(() => {
     function onKey(e) {
@@ -100,6 +119,7 @@ export default function QuizMode() {
   function handleNext() {
     if (index + 1 >= session.length) {
       clearProgress('quiz');
+      if (user) clearQuizProgress(user.uid, 'quiz').catch(console.warn);
       navigate('/results', { state: { answers: [...answers], mode: 'quiz' } });
     } else {
       setIndex(i => i + 1);

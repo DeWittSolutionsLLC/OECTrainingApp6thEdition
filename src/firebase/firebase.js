@@ -235,6 +235,24 @@ export async function getUserSessions(uid, limitCount = 20) {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
+// ─── QUIZ PROGRESS ────────────────────────────────────────────
+
+export async function saveQuizProgress(uid, mode, data) {
+  const ref = doc(db, 'users', uid, 'quizProgress', mode);
+  await setDoc(ref, { ...data, savedAt: serverTimestamp() });
+}
+
+export async function loadQuizProgress(uid, mode) {
+  const ref = doc(db, 'users', uid, 'quizProgress', mode);
+  const snap = await getDoc(ref);
+  return snap.exists() ? snap.data() : null;
+}
+
+export async function clearQuizProgress(uid, mode) {
+  const ref = doc(db, 'users', uid, 'quizProgress', mode);
+  await deleteDoc(ref).catch(console.warn);
+}
+
 // ─── LEADERBOARD ─────────────────────────────────────────────
 
 /**

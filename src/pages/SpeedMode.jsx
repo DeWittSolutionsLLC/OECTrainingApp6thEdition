@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getQuestionsBySection, getSectionColor, shuffle, buildSmartSession } from '../data/oecData';
-import { recordAnswerForUser } from '../firebase/firebase';
+import { recordAnswerForUser, saveQuizProgress, loadQuizProgress, clearQuizProgress } from '../firebase/firebase';
 import { useAuth } from '../context/AuthContext';
 import { saveProgress, loadProgress, clearProgress } from '../utils/quizProgress';
 import '../styles/speed.css';
@@ -20,7 +20,8 @@ function recordLocalWeakness(question, chosen, isCorrect) {
 export default function SpeedMode() {
   const { state } = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  const initDoneRef = useRef(false);
 
   const [timeLimit, setTimeLimit] = useState(state?.timer ?? 10);
 
@@ -34,30 +35,51 @@ export default function SpeedMode() {
   const timerRef = useRef(null);
 
   useEffect(() => {
-    if (!state) {
-      const saved = loadProgress('speed');
-      if (saved?.session?.length) {
-        setSession(saved.session);
-        setIndex(saved.index ?? 0);
-        setAnswers(saved.answers ?? []);
-        const tl = saved.timeLimit ?? 10;
-        setTimeLimit(tl);
-        setTimeLeft(tl);
-        return;
-      }
-      navigate('/setup/speed');
-      return;
-    }
-    clearProgress('speed');
-    const pool = getQuestionsBySection(state.selectedSections);
-    const limit = state.count && state.count < pool.length ? state.count : pool.length;
-    setSession(buildSmartSession(pool, limit));
-  }, [state, navigate]);
+    if (loading || initDoneRef.current) return;
+    initDoneRef.current = true;
 
+    async function init() {
+      const isReload = performance.getEntriesByType('navigation')[0]?.type === 'reload';
+
+      if (isReload || !state) {
+        let saved = loadProgress('speed');
+        if (!saved?.session?.length && user) {
+          const cloud = await loadQuizProgress(user.uid, 'speed').catch(() => null);
+          if (cloud?.session?.length) { saved = cloud; saveProgress('speed', cloud); }
+        }
+        if (saved?.session?.length) {
+          setSession(saved.session);
+          setIndex(saved.index ?? 0);
+          setAnswers(saved.answers ?? []);
+          const tl = saved.timeLimit ?? 10;
+          setTimeLimit(tl);
+          setTimeLeft(tl);
+          return;
+        }
+        if (!state) { navigate('/setup/speed'); return; }
+      }
+
+      clearProgress('speed');
+      if (user) clearQuizProgress(user.uid, 'speed').catch(console.warn);
+      const pool = getQuestionsBySection(state.selectedSections);
+      const limit = state.count && state.count < pool.length ? state.count : pool.length;
+      setSession(buildSmartSession(pool, limit));
+    }
+
+    init();
+  }, [state, navigate, user, loading]);
+
+  // localStorage auto-save
   useEffect(() => {
     if (session.length === 0) return;
     saveProgress('speed', { session, index, answers, timeLimit });
   }, [session, index, answers, timeLimit]);
+
+  // Firestore save on question advance
+  useEffect(() => {
+    if (session.length === 0 || !user) return;
+    saveQuizProgress(user.uid, 'speed', { session, index, answers, timeLimit }).catch(console.warn);
+  }, [session, index, user]);
 
   const currentQ = session[index];
 
@@ -82,6 +104,7 @@ export default function SpeedMode() {
       setFlash(null);
       if (index + 1 >= session.length) {
         clearProgress('speed');
+        if (user) clearQuizProgress(user.uid, 'speed').catch(console.warn);
         navigate('/results', {
           state: {
             answers: [...answers, { question: currentQ, chosen: chosenLetter, isCorrect }],

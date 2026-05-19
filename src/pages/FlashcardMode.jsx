@@ -1,12 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getQuestionsBySection, getSectionColor, shuffle } from '../data/oecData';
+import { saveQuizProgress, loadQuizProgress, clearQuizProgress } from '../firebase/firebase';
+import { useAuth } from '../context/AuthContext';
 import { saveProgress, loadProgress, clearProgress } from '../utils/quizProgress';
 import '../styles/flashcard.css';
 
 export default function FlashcardMode() {
   const { state } = useLocation();
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
+  const initDoneRef = useRef(false);
 
   const [deck, setDeck] = useState([]);
   const [reviewDeck, setReviewDeck] = useState([]);
@@ -16,33 +20,56 @@ export default function FlashcardMode() {
   const [phase, setPhase] = useState('main'); // 'main' | 'review' | 'done'
 
   useEffect(() => {
-    if (!state) {
-      const saved = loadProgress('flashcards');
-      if (saved?.deck?.length) {
-        setDeck(saved.deck);
-        setReviewDeck(saved.reviewDeck ?? []);
-        setIndex(saved.index ?? 0);
-        setPhase(saved.phase ?? 'main');
-        setKnown(saved.known ?? 0);
-        return;
-      }
-      navigate('/setup/flashcards');
-      return;
-    }
-    clearProgress('flashcards');
-    let pool = getQuestionsBySection(state.selectedSections);
-    if (state.order === 'random') pool = shuffle(pool);
-    setDeck(pool);
-  }, [state, navigate]);
+    if (loading || initDoneRef.current) return;
+    initDoneRef.current = true;
 
+    async function init() {
+      const isReload = performance.getEntriesByType('navigation')[0]?.type === 'reload';
+
+      if (isReload || !state) {
+        let saved = loadProgress('flashcards');
+        if (!saved?.deck?.length && user) {
+          const cloud = await loadQuizProgress(user.uid, 'flashcards').catch(() => null);
+          if (cloud?.deck?.length) { saved = cloud; saveProgress('flashcards', cloud); }
+        }
+        if (saved?.deck?.length) {
+          setDeck(saved.deck);
+          setReviewDeck(saved.reviewDeck ?? []);
+          setIndex(saved.index ?? 0);
+          setPhase(saved.phase ?? 'main');
+          setKnown(saved.known ?? 0);
+          return;
+        }
+        if (!state) { navigate('/setup/flashcards'); return; }
+      }
+
+      clearProgress('flashcards');
+      if (user) clearQuizProgress(user.uid, 'flashcards').catch(console.warn);
+      let pool = getQuestionsBySection(state.selectedSections);
+      if (state.order === 'random') pool = shuffle(pool);
+      setDeck(pool);
+    }
+
+    init();
+  }, [state, navigate, user, loading]);
+
+  // localStorage auto-save
   useEffect(() => {
     if (deck.length === 0 || phase === 'done') return;
     saveProgress('flashcards', { deck, reviewDeck, index, phase, known });
   }, [deck, reviewDeck, index, phase, known]);
 
+  // Firestore save on card advance
   useEffect(() => {
-    if (phase === 'done') clearProgress('flashcards');
-  }, [phase]);
+    if (deck.length === 0 || phase === 'done' || !user) return;
+    saveQuizProgress(user.uid, 'flashcards', { deck, reviewDeck, index, phase, known }).catch(console.warn);
+  }, [deck, index, phase, known, user]);
+
+  useEffect(() => {
+    if (phase !== 'done') return;
+    clearProgress('flashcards');
+    if (user) clearQuizProgress(user.uid, 'flashcards').catch(console.warn);
+  }, [phase, user]);
 
   const currentDeck = phase === 'review' ? reviewDeck : deck;
   const currentQ = currentDeck[index];
