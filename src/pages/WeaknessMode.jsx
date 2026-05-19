@@ -5,6 +5,7 @@ import ProgressBar from '../components/ProgressBar';
 import { shuffle } from '../data/oecData';
 import { recordAnswerForUser, getUserWeaknessData, clearUserWeaknessData, clearSingleWeaknessEntry } from '../firebase/firebase';
 import { useAuth } from '../context/AuthContext';
+import { saveProgress, loadProgress, clearProgress } from '../utils/quizProgress';
 import '../styles/weakness.css';
 
 const LOCAL_KEY = 'oec_weakness_data';
@@ -60,6 +61,18 @@ export default function WeaknessMode() {
 
   useEffect(() => {
     async function loadSession() {
+      const saved = loadProgress('weakness');
+      if (saved?.session?.length) {
+        setSession(saved.session);
+        setIndex(saved.index ?? 0);
+        setCorrect(saved.correct ?? 0);
+        setWrong(saved.wrong ?? 0);
+        setMasteredCount(saved.masteredCount ?? 0);
+        setQuestionStats(saved.questionStats ?? {});
+        setLoading(false);
+        return;
+      }
+
       let data;
       if (user) {
         data = await getUserWeaknessData(user.uid).catch(() => getLocalWeaknessData());
@@ -80,6 +93,11 @@ export default function WeaknessMode() {
     }
     loadSession();
   }, [user, navigate]);
+
+  useEffect(() => {
+    if (session.length === 0) return;
+    saveProgress('weakness', { session, index, correct, wrong, masteredCount, questionStats });
+  }, [session, index, correct, wrong, masteredCount, questionStats]);
 
   useEffect(() => {
     function onKey(e) {
@@ -134,6 +152,7 @@ export default function WeaknessMode() {
   function handleNext() {
     setJustMastered(false);
     if (index + 1 >= session.length) {
+      clearProgress('weakness');
       navigate('/results', {
         state: {
           answers: [],
@@ -153,6 +172,7 @@ export default function WeaknessMode() {
       await clearUserWeaknessData(user.uid).catch(console.warn);
     }
     localStorage.removeItem(LOCAL_KEY);
+    clearProgress('weakness');
     navigate('/');
   }
 

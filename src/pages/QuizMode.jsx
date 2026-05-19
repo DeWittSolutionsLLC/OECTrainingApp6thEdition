@@ -5,6 +5,7 @@ import ProgressBar from '../components/ProgressBar';
 import { getQuestionsBySection, shuffle, buildSmartSession } from '../data/oecData';
 import { recordAnswerForUser } from '../firebase/firebase';
 import { useAuth } from '../context/AuthContext';
+import { saveProgress, loadProgress, clearProgress } from '../utils/quizProgress';
 import '../styles/quiz.css';
 
 function recordLocalWeakness(question, isCorrect) {
@@ -29,17 +30,38 @@ export default function QuizMode() {
   const [answers, setAnswers] = useState([]);
 
   useEffect(() => {
-    if (!state) { navigate('/setup/quiz'); return; }
+    if (!state) {
+      const saved = loadProgress('quiz');
+      if (saved?.session?.length) {
+        setSession(saved.session);
+        setIndex(saved.index ?? 0);
+        setAnswers(saved.answers ?? []);
+        if (saved.confirmedChosen) {
+          setChosen(saved.confirmedChosen);
+          setConfirmed(true);
+        }
+        return;
+      }
+      navigate('/setup/quiz');
+      return;
+    }
+    clearProgress('quiz');
     let pool = getQuestionsBySection(state.selectedSections);
+    let sess;
     if (state.order === 'sequential') {
-      // Sequential: just slice, no smart tracking needed
       const limit = state.count && state.count < pool.length ? state.count : pool.length;
-      setSession(pool.slice(0, limit));
+      sess = pool.slice(0, limit);
     } else {
       const limit = state.count && state.count < pool.length ? state.count : pool.length;
-      setSession(buildSmartSession(pool, limit));
+      sess = buildSmartSession(pool, limit);
     }
+    setSession(sess);
   }, [state, navigate]);
+
+  useEffect(() => {
+    if (session.length === 0) return;
+    saveProgress('quiz', { session, index, answers, confirmedChosen: confirmed ? chosen : null });
+  }, [session, index, answers, confirmed, chosen]);
 
   useEffect(() => {
     function onKey(e) {
@@ -77,6 +99,7 @@ export default function QuizMode() {
 
   function handleNext() {
     if (index + 1 >= session.length) {
+      clearProgress('quiz');
       navigate('/results', { state: { answers: [...answers], mode: 'quiz' } });
     } else {
       setIndex(i => i + 1);

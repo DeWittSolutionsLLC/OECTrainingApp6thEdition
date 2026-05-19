@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { getQuestionsBySection, getSectionColor, shuffle, buildSmartSession } from '../data/oecData';
 import { recordAnswerForUser } from '../firebase/firebase';
 import { useAuth } from '../context/AuthContext';
+import { saveProgress, loadProgress, clearProgress } from '../utils/quizProgress';
 import '../styles/speed.css';
 
 
@@ -21,11 +22,11 @@ export default function SpeedMode() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const TIME_LIMIT = state?.timer ?? 10;
+  const [timeLimit, setTimeLimit] = useState(state?.timer ?? 10);
 
   const [session, setSession] = useState([]);
   const [index, setIndex] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(TIME_LIMIT);
+  const [timeLeft, setTimeLeft] = useState(state?.timer ?? 10);
   const [chosen, setChosen] = useState(null);
   const [locked, setLocked] = useState(false);
   const [answers, setAnswers] = useState([]);
@@ -33,11 +34,30 @@ export default function SpeedMode() {
   const timerRef = useRef(null);
 
   useEffect(() => {
-    if (!state) { navigate('/setup/speed'); return; }
+    if (!state) {
+      const saved = loadProgress('speed');
+      if (saved?.session?.length) {
+        setSession(saved.session);
+        setIndex(saved.index ?? 0);
+        setAnswers(saved.answers ?? []);
+        const tl = saved.timeLimit ?? 10;
+        setTimeLimit(tl);
+        setTimeLeft(tl);
+        return;
+      }
+      navigate('/setup/speed');
+      return;
+    }
+    clearProgress('speed');
     const pool = getQuestionsBySection(state.selectedSections);
     const limit = state.count && state.count < pool.length ? state.count : pool.length;
     setSession(buildSmartSession(pool, limit));
   }, [state, navigate]);
+
+  useEffect(() => {
+    if (session.length === 0) return;
+    saveProgress('speed', { session, index, answers, timeLimit });
+  }, [session, index, answers, timeLimit]);
 
   const currentQ = session[index];
 
@@ -61,6 +81,7 @@ export default function SpeedMode() {
     setTimeout(() => {
       setFlash(null);
       if (index + 1 >= session.length) {
+        clearProgress('speed');
         navigate('/results', {
           state: {
             answers: [...answers, { question: currentQ, chosen: chosenLetter, isCorrect }],
@@ -71,10 +92,10 @@ export default function SpeedMode() {
         setIndex(i => i + 1);
         setChosen(null);
         setLocked(false);
-        setTimeLeft(TIME_LIMIT);
+        setTimeLeft(timeLimit);
       }
     }, 600);
-  }, [currentQ, locked, index, session.length, answers, navigate, user]);
+  }, [currentQ, locked, index, session.length, answers, navigate, user, timeLimit]);
 
   // Countdown timer
   useEffect(() => {
@@ -93,7 +114,7 @@ export default function SpeedMode() {
   }, [currentQ, locked, advance]);
 
   // Reset timer on new question
-  useEffect(() => { setTimeLeft(TIME_LIMIT); }, [index]);
+  useEffect(() => { setTimeLeft(timeLimit); }, [index, timeLimit]);
 
   // Keyboard
   useEffect(() => {
@@ -110,7 +131,7 @@ export default function SpeedMode() {
   if (!currentQ) return null;
 
   const color = getSectionColor(currentQ.sectionId);
-  const timerPct = (timeLeft / TIME_LIMIT) * 100;
+  const timerPct = (timeLeft / timeLimit) * 100;
   const timerColor = timeLeft > 6 ? '#22c55e' : timeLeft > 3 ? '#f59e0b' : '#ef4444';
   const correct = answers.filter(a => a.isCorrect).length;
   const wrong = answers.filter(a => !a.isCorrect).length;

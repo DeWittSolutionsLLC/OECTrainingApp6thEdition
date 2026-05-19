@@ -5,6 +5,7 @@ import ProgressBar from '../components/ProgressBar';
 import { getQuestionsBySection, shuffle } from '../data/oecData';
 import { recordAnswerForUser } from '../firebase/firebase';
 import { useAuth } from '../context/AuthContext';
+import { saveProgress, loadProgress, clearProgress } from '../utils/quizProgress';
 import '../styles/practice.css';
 
 function recordLocalWeakness(question, isCorrect) {
@@ -32,11 +33,34 @@ export default function PracticeMode() {
   const [answers, setAnswers] = useState([]);
 
   useEffect(() => {
-    if (!state) { navigate('/setup/practice'); return; }
+    if (!state) {
+      const saved = loadProgress('practice');
+      if (saved?.session?.length) {
+        setSession(saved.session);
+        setIndex(saved.index ?? 0);
+        setAnswers(saved.answers ?? []);
+        setCorrect(saved.correct ?? 0);
+        setWrong(saved.wrong ?? 0);
+        setSkipped(saved.skipped ?? 0);
+        if (saved.confirmedChosen) {
+          setChosen(saved.confirmedChosen);
+          setConfirmed(true);
+        }
+        return;
+      }
+      navigate('/setup/practice');
+      return;
+    }
+    clearProgress('practice');
     let pool = getQuestionsBySection(state.selectedSections);
     if (state.order === 'random') pool = shuffle(pool);
     setSession(pool);
   }, [state, navigate]);
+
+  useEffect(() => {
+    if (session.length === 0) return;
+    saveProgress('practice', { session, index, answers, correct, wrong, skipped, confirmedChosen: confirmed ? chosen : null });
+  }, [session, index, answers, correct, wrong, skipped, confirmed, chosen]);
 
   useEffect(() => {
     function onKey(e) {
@@ -69,6 +93,7 @@ export default function PracticeMode() {
 
   function handleNext() {
     if (index + 1 >= session.length) {
+      clearProgress('practice');
       navigate('/results', {
         state: {
           answers: [...answers],

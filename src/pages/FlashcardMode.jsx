@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getQuestionsBySection, getSectionColor, shuffle } from '../data/oecData';
+import { saveProgress, loadProgress, clearProgress } from '../utils/quizProgress';
 import '../styles/flashcard.css';
 
 export default function FlashcardMode() {
@@ -15,11 +16,33 @@ export default function FlashcardMode() {
   const [phase, setPhase] = useState('main'); // 'main' | 'review' | 'done'
 
   useEffect(() => {
-    if (!state) { navigate('/setup/flashcards'); return; }
+    if (!state) {
+      const saved = loadProgress('flashcards');
+      if (saved?.deck?.length) {
+        setDeck(saved.deck);
+        setReviewDeck(saved.reviewDeck ?? []);
+        setIndex(saved.index ?? 0);
+        setPhase(saved.phase ?? 'main');
+        setKnown(saved.known ?? 0);
+        return;
+      }
+      navigate('/setup/flashcards');
+      return;
+    }
+    clearProgress('flashcards');
     let pool = getQuestionsBySection(state.selectedSections);
     if (state.order === 'random') pool = shuffle(pool);
     setDeck(pool);
   }, [state, navigate]);
+
+  useEffect(() => {
+    if (deck.length === 0 || phase === 'done') return;
+    saveProgress('flashcards', { deck, reviewDeck, index, phase, known });
+  }, [deck, reviewDeck, index, phase, known]);
+
+  useEffect(() => {
+    if (phase === 'done') clearProgress('flashcards');
+  }, [phase]);
 
   const currentDeck = phase === 'review' ? reviewDeck : deck;
   const currentQ = currentDeck[index];
