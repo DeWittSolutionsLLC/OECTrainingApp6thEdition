@@ -57,6 +57,18 @@ export function getQuestionsBySection(sectionIds) {
     .flatMap(s => s.questions);
 }
 
+// Fixes stale sectionName values cached in Firebase/localStorage from older data
+export function normalizeQuestions(questions) {
+  if (!Array.isArray(questions)) return questions;
+  const nameMap = {};
+  OEC_DATA.forEach(s => { nameMap[s.id] = s.name; });
+  return questions.map(q => {
+    const currentName = nameMap[q.sectionId];
+    if (!currentName || currentName === q.sectionName) return q;
+    return { ...q, sectionName: currentName };
+  });
+}
+
 const OEC_DATA = [
   {
     id: 1,

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import QuestionCard from '../components/QuestionCard';
 import ProgressBar from '../components/ProgressBar';
-import { shuffle } from '../data/oecData';
+import { shuffle, normalizeQuestions } from '../data/oecData';
 import { recordAnswerForUser, getUserWeaknessData, clearUserWeaknessData, clearSingleWeaknessEntry, saveQuizProgress, loadQuizProgress, clearQuizProgress } from '../firebase/firebase';
 import { useAuth } from '../context/AuthContext';
 import { saveProgress, loadProgress, clearProgress } from '../utils/quizProgress';
@@ -75,7 +75,7 @@ export default function WeaknessMode() {
       }
 
       if (saved?.session?.length) {
-        setSession(saved.session);
+        setSession(normalizeQuestions(saved.session));
         setIndex(saved.index ?? 0);
         setCorrect(saved.correct ?? 0);
         setWrong(saved.wrong ?? 0);
@@ -100,7 +100,7 @@ export default function WeaknessMode() {
         statsMap[key] = { correct: d.correct, wrong: d.wrong, streak: d.streak || 0 };
       });
       setQuestionStats(statsMap);
-      setSession(shuffle(data.map(d => d.question)));
+      setSession(normalizeQuestions(shuffle(data.map(d => d.question))));
       setLoading(false);
     }
     loadSession();
