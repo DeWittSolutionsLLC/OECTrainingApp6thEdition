@@ -39,7 +39,8 @@ export default function SpeedMode() {
     initDoneRef.current = true;
 
     async function init() {
-      const isReload = performance.getEntriesByType('navigation')[0]?.type === 'reload';
+      const navType = performance.getEntriesByType('navigation')[0]?.type;
+      const isReload = navType === 'reload' || navType === 'back_forward';
 
       if (isReload || !state) {
         let saved = loadProgress('speed');
