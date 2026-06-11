@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { getQuestionsBySection, getSectionColor, shuffle, buildSmartSession } from '../data/oecData';
+import { getQuestionsBySection, getSectionColor, shuffle, buildSmartSession, normalizeQuestions } from '../data/oecData';
 import { recordAnswerForUser, saveQuizProgress, loadQuizProgress, clearQuizProgress } from '../firebase/firebase';
 import { useAuth } from '../context/AuthContext';
 import { saveProgress, loadProgress, clearProgress } from '../utils/quizProgress';
@@ -49,7 +49,7 @@ export default function SpeedMode() {
           if (cloud?.session?.length) { saved = cloud; saveProgress('speed', cloud); }
         }
         if (saved?.session?.length) {
-          setSession(saved.session);
+          setSession(normalizeQuestions(saved.session));
           setIndex(saved.index ?? 0);
           setAnswers(saved.answers ?? []);
           const tl = saved.timeLimit ?? 10;

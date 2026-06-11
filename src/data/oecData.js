@@ -57,15 +57,26 @@ export function getQuestionsBySection(sectionIds) {
     .flatMap(s => s.questions);
 }
 
-// Fixes stale sectionName values cached in Firebase/localStorage from older data
+// Fixes stale question data (answer, choices, text, sectionName) cached in
+// Firebase/localStorage by replacing the cached object with the current live
+// data from OEC_DATA, matched by sectionId + num.
 export function normalizeQuestions(questions) {
   if (!Array.isArray(questions)) return questions;
-  const nameMap = {};
-  OEC_DATA.forEach(s => { nameMap[s.id] = s.name; });
+
+  // Build a lookup map: "sectionId_num" → current question object
+  const liveMap = {};
+  OEC_DATA.forEach(s => {
+    s.questions.forEach(q => {
+      liveMap[`${q.sectionId}_${q.num}`] = q;
+    });
+  });
+
   return questions.map(q => {
-    const currentName = nameMap[q.sectionId];
-    if (!currentName || currentName === q.sectionName) return q;
-    return { ...q, sectionName: currentName };
+    const live = liveMap[`${q.sectionId}_${q.num}`];
+    // If found in live data, replace entirely so answer/choices/text are always fresh
+    if (live) return live;
+    // Unknown question (shouldn't happen) — return as-is
+    return q;
   });
 }
 

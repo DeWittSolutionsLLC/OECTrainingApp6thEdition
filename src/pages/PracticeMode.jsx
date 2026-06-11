@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import QuestionCard from '../components/QuestionCard';
 import ProgressBar from '../components/ProgressBar';
-import { getQuestionsBySection, shuffle } from '../data/oecData';
+import { getQuestionsBySection, shuffle, normalizeQuestions } from '../data/oecData';
 import { recordAnswerForUser, saveQuizProgress, loadQuizProgress, clearQuizProgress } from '../firebase/firebase';
 import { useAuth } from '../context/AuthContext';
 import { saveProgress, loadProgress, clearProgress } from '../utils/quizProgress';
@@ -47,7 +47,7 @@ export default function PracticeMode() {
           if (cloud?.session?.length) { saved = cloud; saveProgress('practice', cloud); }
         }
         if (saved?.session?.length) {
-          setSession(saved.session);
+          setSession(normalizeQuestions(saved.session));
           setIndex(saved.index ?? 0);
           setAnswers(saved.answers ?? []);
           setCorrect(saved.correct ?? 0);
