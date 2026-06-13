@@ -25,7 +25,6 @@ import {
   query,
   orderBy,
   limit,
-  where,
   getDocs,
   serverTimestamp,
 } from 'firebase/firestore';
@@ -252,43 +251,3 @@ export async function clearQuizProgress(uid, mode) {
   await deleteDoc(ref).catch(console.warn);
 }
 
-// ─── LEADERBOARD ─────────────────────────────────────────────
-
-/**
- * Submit a leaderboard entry. One doc per user+mode combination
- * (overwrites if the new score is better).
- */
-export async function submitLeaderboardEntry({ uid, name, mode, scorePct, correct, wrong, total }) {
-  // Use a deterministic ID so each user has at most one entry per mode
-  const entryId = uid ? `${uid}_${mode}` : `anon_${Date.now()}`;
-  const ref = doc(db, 'leaderboard', entryId);
-  const existing = await getDoc(ref);
-
-  if (!existing.exists() || existing.data().scorePct < scorePct) {
-    await setDoc(ref, {
-      uid: uid || null,
-      name,
-      mode,
-      scorePct,
-      correct,
-      wrong,
-      total,
-      updatedAt: serverTimestamp(),
-    });
-  }
-}
-
-/**
- * Fetch top leaderboard entries, optionally filtered by mode.
- */
-export async function fetchTopLeaderboardEntries({ mode = 'all', limit: lim = 25 } = {}) {
-  let q;
-  const ref = collection(db, 'leaderboard');
-  if (mode === 'all') {
-    q = query(ref, orderBy('scorePct', 'desc'), limit(lim));
-  } else {
-    q = query(ref, where('mode', '==', mode), orderBy('scorePct', 'desc'), limit(lim));
-  }
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-}
