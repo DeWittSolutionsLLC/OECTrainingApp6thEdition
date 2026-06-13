@@ -156,7 +156,7 @@ export default function WeaknessMode() {
 
     recordLocalWeakness(currentQ, isCorrect);
     if (user) {
-      recordAnswerForUser(user.uid, currentQ, isCorrect).catch(console.warn);
+      recordAnswerForUser(user.uid, currentQ, isCorrect, newStreak).catch(console.warn);
       if (nowMastered) {
         clearSingleWeaknessEntry(user.uid, key).catch(console.warn);
       }

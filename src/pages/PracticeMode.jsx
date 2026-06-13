@@ -130,8 +130,23 @@ export default function PracticeMode() {
 
   function handleSkip() {
     if (confirmed) return;
-    setSkipped(s => s + 1);
-    handleNext();
+    const newSkipped = skipped + 1;
+    setSkipped(newSkipped);
+    if (index + 1 >= session.length) {
+      clearProgress('practice');
+      if (user) clearQuizProgress(user.uid, 'practice').catch(console.warn);
+      navigate('/results', {
+        state: {
+          answers: [...answers],
+          mode: 'practice',
+          summary: { correct, wrong, skipped: newSkipped, total: session.length },
+        },
+      });
+    } else {
+      setIndex(i => i + 1);
+      setChosen(null);
+      setConfirmed(false);
+    }
   }
 
   if (!currentQ) return null;

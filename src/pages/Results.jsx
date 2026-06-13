@@ -17,6 +17,7 @@ export default function Results() {
   const navigate = useNavigate();
   const { user, profile, refreshProfile } = useAuth();
   const [filter, setFilter] = useState('all');
+  const submittedRef = useRef(false);
 
   if (!state) { navigate('/'); return null; }
 
@@ -27,8 +28,6 @@ export default function Results() {
   const pct     = total > 0 ? Math.round((correct / total) * 100) : 0;
   const grade   = pct >= 90 ? 'A' : pct >= 80 ? 'B' : pct >= 70 ? 'C' : pct >= 60 ? 'D' : 'F';
   const gradeColor = pct >= 80 ? '#22c55e' : pct >= 60 ? '#f59e0b' : '#ef4444';
-
-  const submittedRef = useRef(false);
 
   useEffect(() => {
     if (!mode || submittedRef.current) return;

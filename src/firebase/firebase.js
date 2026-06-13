@@ -137,21 +137,24 @@ export async function updateUserProfile(uid, updates) {
  * Record a single question answer for a user.
  * Stores in: users/{uid}/weakness/{sectionId_num}
  */
-export async function recordAnswerForUser(uid, question, isCorrect) {
+export async function recordAnswerForUser(uid, question, isCorrect, streak = undefined) {
   const key = `${question.sectionId}_${question.num}`;
   const ref = doc(db, 'users', uid, 'weakness', key);
   const snap = await getDoc(ref);
 
   if (snap.exists()) {
-    await updateDoc(ref, {
+    const updateData = {
       [isCorrect ? 'correct' : 'wrong']: increment(1),
       lastSeen: serverTimestamp(),
       question, // keep question data fresh
-    });
+    };
+    if (streak !== undefined) updateData.streak = streak;
+    await updateDoc(ref, updateData);
   } else {
     await setDoc(ref, {
       correct: isCorrect ? 1 : 0,
       wrong: isCorrect ? 0 : 1,
+      streak: streak ?? 0,
       question,
       firstSeen: serverTimestamp(),
       lastSeen: serverTimestamp(),
@@ -191,11 +194,7 @@ export async function clearSingleWeaknessEntry(uid, key) {
 export async function clearUserWeaknessData(uid) {
   const ref = collection(db, 'users', uid, 'weakness');
   const snap = await getDocs(ref);
-  const deletes = snap.docs.map((d) =>
-    // Firestore doesn't have batch delete in SDK v9 easily, so we setDoc to reset
-    setDoc(d.ref, { correct: 0, wrong: 0, question: d.data().question, cleared: true })
-  );
-  await Promise.all(deletes);
+  await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
 }
 
 // ─── SESSION HISTORY ──────────────────────────────────────────

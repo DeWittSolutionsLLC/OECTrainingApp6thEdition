@@ -12,25 +12,27 @@ import Results       from './pages/Results';
 import AuthPage      from './pages/AuthPage';
 import ProfilePage   from './pages/ProfilePage';
 import NavBar        from './components/NavBar';
+import Leaderboard   from './pages/Leaderboard';
 
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <NavBar/>
-        
+
         <Routes>
 
-          <Route path="/"            element={<Home />} />
-          <Route path="/auth"        element={<AuthPage />} />
-          <Route path="/profile"     element={<ProfilePage />} />
-          <Route path="/setup/:mode" element={<QuizSetup />} />
-          <Route path="/quiz"        element={<QuizMode />} />
-          <Route path="/practice"    element={<PracticeMode />} />
-          <Route path="/flashcards"  element={<FlashcardMode />} />
-          <Route path="/speed"       element={<SpeedMode />} />
-          <Route path="/weakness"    element={<WeaknessMode />} />
-          <Route path="/results"     element={<Results />} />
+          <Route path="/"             element={<Home />} />
+          <Route path="/auth"         element={<AuthPage />} />
+          <Route path="/profile"      element={<ProfilePage />} />
+          <Route path="/leaderboard"  element={<Leaderboard />} />
+          <Route path="/setup/:mode"  element={<QuizSetup />} />
+          <Route path="/quiz"         element={<QuizMode />} />
+          <Route path="/practice"     element={<PracticeMode />} />
+          <Route path="/flashcards"   element={<FlashcardMode />} />
+          <Route path="/speed"        element={<SpeedMode />} />
+          <Route path="/weakness"     element={<WeaknessMode />} />
+          <Route path="/results"      element={<Results />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
