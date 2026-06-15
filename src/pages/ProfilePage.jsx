@@ -220,6 +220,7 @@ export default function ProfilePage() {
 
         <div className="profile-actions">
           <button className="profile-btn" onClick={() => navigate('/')}>← Back to Home</button>
+          <button className="profile-btn" onClick={() => navigate('/feedback')}>✉️ Send Feedback</button>
           {weakness.length > 0 && (
             <button className="profile-btn profile-btn--drill" onClick={() => navigate('/weakness')}>
               🔥 Drill Weak Spots

@@ -11,9 +11,14 @@ import '../styles/quiz.css';
 function recordLocalWeakness(question, isCorrect) {
   const stored = JSON.parse(localStorage.getItem('oec_weakness_data') || '{}');
   const key = `${question.sectionId}_${question.num}`;
-  if (!stored[key]) stored[key] = { correct: 0, wrong: 0, question };
-  if (isCorrect) stored[key].correct++;
-  else stored[key].wrong++;
+  if (!stored[key]) stored[key] = { correct: 0, wrong: 0, streak: 0, question };
+  if (isCorrect) {
+    stored[key].correct++;
+  } else {
+    stored[key].wrong++;
+    stored[key].mastered = false;
+    stored[key].streak = 0;
+  }
   stored[key].question = question;
   localStorage.setItem('oec_weakness_data', JSON.stringify(stored));
 }

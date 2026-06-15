@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import QuestionCard from '../components/QuestionCard';
 import ProgressBar from '../components/ProgressBar';
 import { shuffle, normalizeQuestions } from '../data/oecData';
-import { recordAnswerForUser, getUserWeaknessData, clearUserWeaknessData, clearSingleWeaknessEntry, saveQuizProgress, loadQuizProgress, clearQuizProgress } from '../firebase/firebase';
+import { recordAnswerForUser, getUserWeaknessData, clearUserWeaknessData, markQuestionMastered, saveQuizProgress, loadQuizProgress, clearQuizProgress } from '../firebase/firebase';
 import { useAuth } from '../context/AuthContext';
 import { saveProgress, loadProgress, clearProgress } from '../utils/quizProgress';
 import '../styles/weakness.css';
@@ -14,7 +14,7 @@ const MASTERY_STREAK = 3;
 function getLocalWeaknessData() {
   const stored = JSON.parse(localStorage.getItem(LOCAL_KEY) || '{}');
   return Object.values(stored)
-    .filter(d => d.wrong > 0)
+    .filter(d => d.wrong > 0 && !d.mastered)
     .sort((a, b) => {
       const rA = a.wrong / (a.correct + a.wrong);
       const rB = b.wrong / (b.correct + b.wrong);
@@ -36,9 +36,9 @@ function recordLocalWeakness(question, isCorrect) {
   }
   stored[key].question = question;
 
-  // Remove from weakness data when mastery streak reached
+  // Mark mastered instead of deleting — prevents re-add race conditions
   if (stored[key].streak >= MASTERY_STREAK) {
-    delete stored[key];
+    stored[key].mastered = true;
   }
 
   localStorage.setItem(LOCAL_KEY, JSON.stringify(stored));
@@ -158,7 +158,7 @@ export default function WeaknessMode() {
     if (user) {
       recordAnswerForUser(user.uid, currentQ, isCorrect, newStreak).catch(console.warn);
       if (nowMastered) {
-        clearSingleWeaknessEntry(user.uid, key).catch(console.warn);
+        markQuestionMastered(user.uid, key).catch(console.warn);
       }
     }
 

@@ -12,6 +12,7 @@ import Results       from './pages/Results';
 import AuthPage      from './pages/AuthPage';
 import ProfilePage   from './pages/ProfilePage';
 import ProgressPage  from './pages/ProgressPage';
+import FeedbackPage  from './pages/FeedbackPage';
 import NavBar        from './components/NavBar';
 
 export default function App() {
@@ -25,6 +26,7 @@ export default function App() {
           <Route path="/"             element={<Home />} />
           <Route path="/auth"         element={<AuthPage />} />
           <Route path="/profile"      element={<ProfilePage />} />
+          <Route path="/feedback"     element={<FeedbackPage />} />
           <Route path="/progress"     element={<ProgressPage />} />
           <Route path="/setup/:mode"  element={<QuizSetup />} />
           <Route path="/quiz"         element={<QuizMode />} />

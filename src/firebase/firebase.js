@@ -148,12 +148,18 @@ export async function recordAnswerForUser(uid, question, isCorrect, streak = und
       question, // keep question data fresh
     };
     if (streak !== undefined) updateData.streak = streak;
+    if (!isCorrect) {
+      updateData.mastered = false;
+      // Reset streak when answered wrong outside WeaknessMode (no explicit streak passed)
+      if (streak === undefined) updateData.streak = 0;
+    }
     await updateDoc(ref, updateData);
   } else {
     await setDoc(ref, {
       correct: isCorrect ? 1 : 0,
       wrong: isCorrect ? 0 : 1,
       streak: streak ?? 0,
+      mastered: false,
       question,
       firstSeen: serverTimestamp(),
       lastSeen: serverTimestamp(),
@@ -170,7 +176,7 @@ export async function getUserWeaknessData(uid) {
   const snap = await getDocs(ref);
   return snap.docs
     .map((d) => ({ streak: 0, ...d.data() }))
-    .filter((d) => d.wrong > 0)
+    .filter((d) => d.wrong > 0 && !d.mastered)
     .sort((a, b) => {
       const rateA = a.wrong / (a.correct + a.wrong);
       const rateB = b.wrong / (b.correct + b.wrong);
@@ -179,12 +185,12 @@ export async function getUserWeaknessData(uid) {
 }
 
 /**
- * Removes a single weakness entry when the user has mastered it.
- * Called from WeaknessMode when streak reaches the mastery threshold.
+ * Marks a single weakness entry as mastered instead of deleting it.
+ * Using a flag prevents race conditions and keeps the record for ProgressPage.
  */
-export async function clearSingleWeaknessEntry(uid, key) {
+export async function markQuestionMastered(uid, key) {
   const ref = doc(db, 'users', uid, 'weakness', key);
-  await deleteDoc(ref).catch(console.warn);
+  await setDoc(ref, { mastered: true }, { merge: true });
 }
 
 /**
@@ -261,5 +267,30 @@ export async function loadQuizProgress(uid, mode) {
 export async function clearQuizProgress(uid, mode) {
   const ref = doc(db, 'users', uid, 'quizProgress', mode);
   await deleteDoc(ref).catch(console.warn);
+}
+
+// ─── FEEDBACK ──────────────────────────────────────────────────
+
+/**
+ * Submit feedback for a user. Stored at: users/{uid}/feedback
+ */
+export async function submitFeedback(uid, { category, message, anonymous = false }) {
+  if (!uid) throw new Error('UID required to submit feedback');
+  await addDoc(collection(db, 'users', uid, 'feedback'), {
+    category: category || 'other',
+    message: message || '',
+    anonymous: !!anonymous,
+    createdAt: serverTimestamp(),
+  });
+}
+
+/**
+ * Fetch recent feedback submissions for a user, newest first.
+ */
+export async function getUserFeedback(uid, limitCount = 50) {
+  const ref = collection(db, 'users', uid, 'feedback');
+  const q = query(ref, orderBy('createdAt', 'desc'), limit(limitCount));
+  const snap = await getDocs(q);
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
