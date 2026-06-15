@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import QuestionCard from '../components/QuestionCard';
 import ProgressBar from '../components/ProgressBar';
-import { getQuestionsBySection, shuffle, normalizeQuestions } from '../data/oecData';
+import { getQuestionsBySection, shuffle, normalizeQuestions, filterQuestions, shuffleQuestionChoices } from '../data/oecData';
 import { recordAnswerForUser, saveQuizProgress, loadQuizProgress, clearQuizProgress } from '../firebase/firebase';
 import { useAuth } from '../context/AuthContext';
 import { saveProgress, loadProgress, clearProgress } from '../utils/quizProgress';
@@ -62,7 +62,9 @@ export default function PracticeMode() {
       clearProgress('practice');
       if (user) clearQuizProgress(user.uid, 'practice').catch(console.warn);
       let pool = getQuestionsBySection(state.selectedSections);
+      if (state.filter) pool = filterQuestions(pool, state.filter);
       if (state.order === 'random') pool = shuffle(pool);
+      if (state.shuffleAnswers) pool = pool.map(shuffleQuestionChoices);
       setSession(pool);
     }
 
@@ -123,6 +125,7 @@ export default function PracticeMode() {
           answers: [...answers, { question: currentQ, chosen, isCorrect }],
           mode: 'practice',
           summary: { correct: finalCorrect, wrong: finalWrong, skipped, total: session.length },
+          sectionIds: state?.selectedSections ?? null,
         },
       });
     } else {
@@ -144,6 +147,7 @@ export default function PracticeMode() {
           answers: [...answers],
           mode: 'practice',
           summary: { correct, wrong, skipped: newSkipped, total: session.length },
+          sectionIds: state?.selectedSections ?? null,
         },
       });
     } else {

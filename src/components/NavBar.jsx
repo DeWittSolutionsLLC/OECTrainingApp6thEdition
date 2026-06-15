@@ -47,6 +47,9 @@ export default function NavBar() {
           <Link to="/setup/flashcards" onClick={() => setIsOpen(false)} className={`navbar__link ${pathname.includes('flash') ? 'navbar__link--active' : ''}`}>Flashcards</Link>
           <Link to="/setup/speed" onClick={() => setIsOpen(false)} className={`navbar__link ${pathname.includes('speed') ? 'navbar__link--active' : ''}`}>Speed</Link>
           <Link to="/setup/weakness" onClick={() => setIsOpen(false)} className={`navbar__link ${pathname.includes('weakness') ? 'navbar__link--active' : ''}`}>Weakness</Link>
+          {user && (
+            <Link to="/progress" onClick={() => setIsOpen(false)} className={`navbar__link ${pathname === '/progress' ? 'navbar__link--active' : ''}`}>Progress</Link>
+          )}
         </div>
 
         <div className="navbar__auth">

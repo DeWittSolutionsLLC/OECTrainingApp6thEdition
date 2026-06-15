@@ -202,7 +202,7 @@ export async function clearUserWeaknessData(uid) {
  * Saves a completed session to users/{uid}/sessions
  * and increments aggregate counters on the user doc.
  */
-export async function saveSession(uid, { mode, correct, wrong, total, scorePct }) {
+export async function saveSession(uid, { mode, correct, wrong, total, scorePct, sectionIds }) {
   // Add session document
   await addDoc(collection(db, 'users', uid, 'sessions'), {
     mode,
@@ -210,6 +210,7 @@ export async function saveSession(uid, { mode, correct, wrong, total, scorePct }
     wrong,
     total,
     scorePct,
+    sectionIds: sectionIds ?? null,
     createdAt: serverTimestamp(),
   });
 
@@ -231,6 +232,17 @@ export async function getUserSessions(uid, limitCount = 20) {
   const q = query(ref, orderBy('createdAt', 'desc'), limit(limitCount));
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+/**
+ * Fetches ALL question-level progress for a user (no wrong>0 filter).
+ * Used by the Progress page to compute seen/mastered counts.
+ * Each entry: { id: "sectionId_num", correct, wrong, streak, ... }
+ */
+export async function getAllUserProgress(uid) {
+  const ref = collection(db, 'users', uid, 'weakness');
+  const snap = await getDocs(ref);
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
 // ─── QUIZ PROGRESS ────────────────────────────────────────────

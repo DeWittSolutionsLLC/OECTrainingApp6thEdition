@@ -80,6 +80,46 @@ export function normalizeQuestions(questions) {
   });
 }
 
+export function getAllSections() {
+  return OEC_DATA;
+}
+
+export function filterQuestions(pool, filterType) {
+  if (!filterType || filterType === 'all') return pool;
+
+  if (filterType === 'unseen') {
+    const seenCounts = JSON.parse(localStorage.getItem('oec_seen_counts') || '{}');
+    const weakData = JSON.parse(localStorage.getItem('oec_weakness_data') || '{}');
+    return pool.filter(q => {
+      const key = `${q.sectionId}_${q.num}`;
+      return !seenCounts[key] && !(weakData[key] && (weakData[key].correct + weakData[key].wrong) > 0);
+    });
+  }
+
+  if (filterType === 'unmastered') {
+    const weakData = JSON.parse(localStorage.getItem('oec_weakness_data') || '{}');
+    return pool.filter(q => {
+      const key = `${q.sectionId}_${q.num}`;
+      const e = weakData[key];
+      if (!e) return true;
+      return !((e.correct || 0) >= 3 && (e.wrong || 0) === 0);
+    });
+  }
+
+  return pool;
+}
+
+export function shuffleQuestionChoices(question) {
+  const orig = ['A', 'B', 'C', 'D'];
+  const permuted = shuffle(['A', 'B', 'C', 'D']);
+  const newChoices = {};
+  permuted.forEach((origLetter, i) => {
+    newChoices[orig[i]] = question.choices[origLetter];
+  });
+  const newAnswer = orig[permuted.indexOf(question.answer)];
+  return { ...question, choices: newChoices, answer: newAnswer };
+}
+
 const OEC_DATA = [
   {
     id: 1,

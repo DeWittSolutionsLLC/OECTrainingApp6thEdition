@@ -59,6 +59,8 @@ export default function QuizSetup() {
   const [order, setOrder] = useState('random');
   const [count, setCount] = useState(9999);
   const [timer, setTimer] = useState(10);
+  const [shuffleAnswers, setShuffleAnswers] = useState(false);
+  const [filter, setFilter] = useState('all');
 
   const isWeakness = mode === 'weakness';
 
@@ -75,7 +77,7 @@ export default function QuizSetup() {
   }, [isWeakness, user]);
 
   function handleStart() {
-    const state = { selectedSections, order, count: parseInt(count, 10), timer };
+    const state = { selectedSections, order, count: parseInt(count, 10), timer, shuffleAnswers, filter };
     navigate(`/${mode}`, { state });
   }
 
@@ -161,6 +163,25 @@ export default function QuizSetup() {
                   {[5, 10, 15, 20, 30].map(t => (
                     <button key={t} className={`setup__seg-btn ${timer === t ? 'setup__seg-btn--active' : ''}`} onClick={() => setTimer(t)}>{t}s</button>
                   ))}
+                </div>
+              </div>
+            )}
+
+            <div className="setup__field">
+              <label className="setup__label">Question Filter</label>
+              <div className="setup__seg">
+                <button className={`setup__seg-btn ${filter === 'all' ? 'setup__seg-btn--active' : ''}`} onClick={() => setFilter('all')}>All</button>
+                <button className={`setup__seg-btn ${filter === 'unseen' ? 'setup__seg-btn--active' : ''}`} onClick={() => setFilter('unseen')}>Unseen Only</button>
+                <button className={`setup__seg-btn ${filter === 'unmastered' ? 'setup__seg-btn--active' : ''}`} onClick={() => setFilter('unmastered')}>Unmastered Only</button>
+              </div>
+            </div>
+
+            {mode !== 'flashcards' && (
+              <div className="setup__field">
+                <label className="setup__label">Answer Order</label>
+                <div className="setup__seg">
+                  <button className={`setup__seg-btn ${!shuffleAnswers ? 'setup__seg-btn--active' : ''}`} onClick={() => setShuffleAnswers(false)}>Fixed A B C D</button>
+                  <button className={`setup__seg-btn ${shuffleAnswers ? 'setup__seg-btn--active' : ''}`} onClick={() => setShuffleAnswers(true)}>Shuffle Answers</button>
                 </div>
               </div>
             )}

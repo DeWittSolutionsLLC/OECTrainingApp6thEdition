@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { getQuestionsBySection, getSectionColor, shuffle, buildSmartSession, normalizeQuestions } from '../data/oecData';
+import { getQuestionsBySection, getSectionColor, shuffle, buildSmartSession, normalizeQuestions, filterQuestions, shuffleQuestionChoices } from '../data/oecData';
 import { recordAnswerForUser, saveQuizProgress, loadQuizProgress, clearQuizProgress } from '../firebase/firebase';
 import { useAuth } from '../context/AuthContext';
 import { saveProgress, loadProgress, clearProgress } from '../utils/quizProgress';
@@ -64,9 +64,12 @@ export default function SpeedMode() {
 
       clearProgress('speed');
       if (user) clearQuizProgress(user.uid, 'speed').catch(console.warn);
-      const pool = getQuestionsBySection(state.selectedSections);
+      let pool = getQuestionsBySection(state.selectedSections);
+      if (state.filter) pool = filterQuestions(pool, state.filter);
       const limit = state.count && state.count < pool.length ? state.count : pool.length;
-      setSession(buildSmartSession(pool, limit));
+      let sess = buildSmartSession(pool, limit);
+      if (state.shuffleAnswers) sess = sess.map(shuffleQuestionChoices);
+      setSession(sess);
     }
 
     init();
@@ -119,6 +122,7 @@ export default function SpeedMode() {
             answers: newAnswers,
             mode: 'speed',
             summary: { correct: newCorrect, wrong: newWrong, total: session.length },
+            sectionIds: state?.selectedSections ?? null,
           },
         });
       } else {

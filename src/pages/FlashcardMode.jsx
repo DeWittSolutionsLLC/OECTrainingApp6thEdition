@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { getQuestionsBySection, getSectionColor, shuffle } from '../data/oecData';
+import { getQuestionsBySection, getSectionColor, shuffle, filterQuestions } from '../data/oecData';
 import { saveQuizProgress, loadQuizProgress, clearQuizProgress } from '../firebase/firebase';
 import { useAuth } from '../context/AuthContext';
 import { saveProgress, loadProgress, clearProgress } from '../utils/quizProgress';
@@ -46,6 +46,7 @@ export default function FlashcardMode() {
       clearProgress('flashcards');
       if (user) clearQuizProgress(user.uid, 'flashcards').catch(console.warn);
       let pool = getQuestionsBySection(state.selectedSections);
+      if (state.filter) pool = filterQuestions(pool, state.filter);
       if (state.order === 'random') pool = shuffle(pool);
       setDeck(pool);
     }

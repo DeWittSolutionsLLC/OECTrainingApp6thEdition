@@ -21,7 +21,7 @@ export default function Results() {
 
   if (!state) { navigate('/'); return null; }
 
-  const { answers = [], mode, summary } = state;
+  const { answers = [], mode, summary, sectionIds } = state;
   const correct = summary?.correct ?? answers.filter((a) => a.isCorrect).length;
   const wrong   = summary?.wrong   ?? answers.filter((a) => !a.isCorrect).length;
   const total   = summary?.total   ?? answers.length;
@@ -39,7 +39,7 @@ export default function Results() {
     (async () => {
       try {
         console.log('Saving session with:', { mode, correct, wrong, total, scorePct: pct });
-        await saveSession(user.uid, { mode, correct, wrong, total, scorePct: pct });
+        await saveSession(user.uid, { mode, correct, wrong, total, scorePct: pct, sectionIds: sectionIds ?? null });
         await refreshProfile();
       } catch (e) {
         console.warn('Session save failed:', e);

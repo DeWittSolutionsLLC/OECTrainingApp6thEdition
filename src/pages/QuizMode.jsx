@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import QuestionCard from '../components/QuestionCard';
 import ProgressBar from '../components/ProgressBar';
-import { getQuestionsBySection, shuffle, buildSmartSession, normalizeQuestions } from '../data/oecData';
+import { getQuestionsBySection, shuffle, buildSmartSession, normalizeQuestions, filterQuestions, shuffleQuestionChoices } from '../data/oecData';
 import { recordAnswerForUser, saveQuizProgress, loadQuizProgress, clearQuizProgress } from '../firebase/firebase';
 import { useAuth } from '../context/AuthContext';
 import { saveProgress, loadProgress, clearProgress } from '../utils/quizProgress';
@@ -64,6 +64,7 @@ export default function QuizMode() {
       clearProgress('quiz');
       if (user) clearQuizProgress(user.uid, 'quiz').catch(console.warn);
       let pool = getQuestionsBySection(state.selectedSections);
+      if (state.filter) pool = filterQuestions(pool, state.filter);
       let sess;
       if (state.order === 'sequential') {
         const limit = state.count && state.count < pool.length ? state.count : pool.length;
@@ -72,6 +73,7 @@ export default function QuizMode() {
         const limit = state.count && state.count < pool.length ? state.count : pool.length;
         sess = buildSmartSession(pool, limit);
       }
+      if (state.shuffleAnswers) sess = sess.map(shuffleQuestionChoices);
       setSession(sess);
     }
 
@@ -131,12 +133,13 @@ export default function QuizMode() {
       // Calculate final counts including current answer
       const finalCorrect = chosen === currentQ.answer ? correctCount + 1 : correctCount;
       const finalWrong = chosen !== currentQ.answer ? wrongCount + 1 : wrongCount;
-      navigate('/results', { 
-        state: { 
-          answers: [...answers, { question: currentQ, chosen, isCorrect: chosen === currentQ.answer }], 
+      navigate('/results', {
+        state: {
+          answers: [...answers, { question: currentQ, chosen, isCorrect: chosen === currentQ.answer }],
           mode: 'quiz',
           summary: { correct: finalCorrect, wrong: finalWrong, total: session.length },
-        } 
+          sectionIds: state?.selectedSections ?? null,
+        }
       });
     } else {
       setIndex(i => i + 1);
