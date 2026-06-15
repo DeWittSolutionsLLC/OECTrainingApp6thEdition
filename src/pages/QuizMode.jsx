@@ -150,7 +150,7 @@ export default function QuizMode() {
       <div className="quiz-page__inner">
         <div className="quiz-page__header">
           <button className="quiz-page__exit" onClick={() => navigate('/')}>✕ Exit</button>
-          <ProgressBar current={index} total={session.length} correct={correct} wrong={wrong} />
+          <ProgressBar current={index} total={session.length} correct={correctCount} wrong={wrongCount} />
         </div>
 
         {currentQ && (
