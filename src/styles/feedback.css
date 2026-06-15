@@ -1,7 +1,18 @@
-.feedback-page { display:flex; justify-content:center; padding:28px; }
-.feedback-inner { width:100%; max-width:880px; background:var(--panel-bg, #fff); padding:20px; border-radius:8px; box-shadow:0 6px 18px rgba(20,20,20,0.06); }
+.feedback-page {
+  display:flex;
+  justify-content:center;
+  padding:28px; 
+}
+.feedback-inner {
+  width:100%;
+  max-width:880px;
+  background:var(--bg-card);
+  padding:20px;
+  border-radius:8px; 
+  box-shadow:0 6px 18px rgba(20,20,20,0.06);
+ }
 .feedback-title { margin:0 0 6px; }
-.feedback-sub { margin:0 0 18px; color:#374151 }
+.feedback-sub { margin:0 0 18px; color:var(--text-muted) }
 .feedback-form { margin-bottom:20px; }
 .f-label { display:block; margin-bottom:12px; font-weight:600; }
 .f-label select, .f-label textarea { width:100%; margin-top:6px; border:1px solid #d1d5db; border-radius:6px; padding:8px; font-size:14px; }
