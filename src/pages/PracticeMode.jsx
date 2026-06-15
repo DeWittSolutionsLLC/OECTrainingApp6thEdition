@@ -114,11 +114,15 @@ export default function PracticeMode() {
     if (index + 1 >= session.length) {
       clearProgress('practice');
       if (user) clearQuizProgress(user.uid, 'practice').catch(console.warn);
+      // Calculate final counts including current answer
+      const isCorrect = chosen === currentQ.answer;
+      const finalCorrect = isCorrect ? correct + 1 : correct;
+      const finalWrong = !isCorrect ? wrong + 1 : wrong;
       navigate('/results', {
         state: {
-          answers: [...answers],
+          answers: [...answers, { question: currentQ, chosen, isCorrect }],
           mode: 'practice',
-          summary: { correct, wrong, skipped, total: session.length },
+          summary: { correct: finalCorrect, wrong: finalWrong, skipped, total: session.length },
         },
       });
     } else {

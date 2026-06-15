@@ -38,6 +38,7 @@ export default function Results() {
     if (!user) return;
     (async () => {
       try {
+        console.log('Saving session with:', { mode, correct, wrong, total, scorePct: pct });
         await saveSession(user.uid, { mode, correct, wrong, total, scorePct: pct });
         await refreshProfile();
       } catch (e) {

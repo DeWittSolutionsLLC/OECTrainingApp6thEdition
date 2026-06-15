@@ -26,6 +26,11 @@ export default function ProfilePage() {
           getUserSessions(user.uid, 500),
           getUserWeaknessData(user.uid),
         ]);
+        console.log('Retrieved sessions:', s);
+        console.log('Session count:', s.length);
+        if (s.length > 0) {
+          console.log('First session:', s[0]);
+        }
         setSessions(s);
         setWeakness(w);
       } catch (e) {

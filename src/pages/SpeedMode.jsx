@@ -32,6 +32,8 @@ export default function SpeedMode() {
   const [locked, setLocked] = useState(false);
   const [answers, setAnswers] = useState([]);
   const [flash, setFlash] = useState(null);
+  const [correct, setCorrect] = useState(0);
+  const [wrong, setWrong] = useState(0);
   const timerRef = useRef(null);
 
   useEffect(() => {
@@ -99,7 +101,13 @@ export default function SpeedMode() {
     }
 
     setFlash(isCorrect ? 'correct' : 'wrong');
-    setAnswers(prev => [...prev, { question: currentQ, chosen: chosenLetter, isCorrect }]);
+    const newAnswers = [...answers, { question: currentQ, chosen: chosenLetter, isCorrect }];
+    const newCorrect = isCorrect ? correct + 1 : correct;
+    const newWrong = !isCorrect ? wrong + 1 : wrong;
+    
+    setAnswers(newAnswers);
+    if (isCorrect) setCorrect(c => c + 1);
+    else setWrong(w => w + 1);
 
     setTimeout(() => {
       setFlash(null);
@@ -108,8 +116,9 @@ export default function SpeedMode() {
         if (user) clearQuizProgress(user.uid, 'speed').catch(console.warn);
         navigate('/results', {
           state: {
-            answers: [...answers, { question: currentQ, chosen: chosenLetter, isCorrect }],
+            answers: newAnswers,
             mode: 'speed',
+            summary: { correct: newCorrect, wrong: newWrong, total: session.length },
           },
         });
       } else {
@@ -157,8 +166,6 @@ export default function SpeedMode() {
   const color = getSectionColor(currentQ.sectionId);
   const timerPct = (timeLeft / timeLimit) * 100;
   const timerColor = timeLeft > 6 ? '#22c55e' : timeLeft > 3 ? '#f59e0b' : '#ef4444';
-  const correct = answers.filter(a => a.isCorrect).length;
-  const wrong = answers.filter(a => !a.isCorrect).length;
 
   return (
     <div className={`speed-page ${flash ? `speed-page--${flash}` : ''}`}>

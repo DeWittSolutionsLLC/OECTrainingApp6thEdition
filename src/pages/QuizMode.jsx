@@ -106,8 +106,8 @@ export default function QuizMode() {
   });
 
   const currentQ = session[index];
-  const correct = answers.filter(a => a.isCorrect).length;
-  const wrong = answers.filter(a => !a.isCorrect).length;
+  const correctCount = answers.filter(a => a.isCorrect).length;
+  const wrongCount = answers.filter(a => !a.isCorrect).length;
 
   function handleConfirm() {
     if (!chosen || confirmed) return;
@@ -128,7 +128,16 @@ export default function QuizMode() {
     if (index + 1 >= session.length) {
       clearProgress('quiz');
       if (user) clearQuizProgress(user.uid, 'quiz').catch(console.warn);
-      navigate('/results', { state: { answers: [...answers], mode: 'quiz' } });
+      // Calculate final counts including current answer
+      const finalCorrect = chosen === currentQ.answer ? correctCount + 1 : correctCount;
+      const finalWrong = chosen !== currentQ.answer ? wrongCount + 1 : wrongCount;
+      navigate('/results', { 
+        state: { 
+          answers: [...answers, { question: currentQ, chosen, isCorrect: chosen === currentQ.answer }], 
+          mode: 'quiz',
+          summary: { correct: finalCorrect, wrong: finalWrong, total: session.length },
+        } 
+      });
     } else {
       setIndex(i => i + 1);
       setChosen(null);

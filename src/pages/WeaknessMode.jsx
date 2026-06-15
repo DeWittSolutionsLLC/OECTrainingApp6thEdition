@@ -173,11 +173,20 @@ export default function WeaknessMode() {
     if (index + 1 >= session.length) {
       clearProgress('weakness');
       if (user) clearQuizProgress(user.uid, 'weakness').catch(console.warn);
+      // Calculate final counts including current answer
+      const isCorrect = chosen === currentQ.answer;
+      const finalCorrect = isCorrect ? correct + 1 : correct;
+      const finalWrong = !isCorrect ? wrong + 1 : wrong;
+      const key = `${currentQ.sectionId}_${currentQ.num}`;
+      const prevStreak = questionStats[key]?.streak || 0;
+      const newStreak = isCorrect ? prevStreak + 1 : 0;
+      const nowMastered = newStreak >= MASTERY_STREAK;
+      const finalMastered = nowMastered ? masteredCount + 1 : masteredCount;
       navigate('/results', {
         state: {
           answers: [],
           mode: 'weakness',
-          summary: { correct, wrong, mastered: masteredCount, total: session.length },
+          summary: { correct: finalCorrect, wrong: finalWrong, mastered: finalMastered, total: session.length },
         },
       });
     } else {
