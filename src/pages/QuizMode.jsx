@@ -135,14 +135,11 @@ export default function QuizMode() {
     if (index + 1 >= session.length) {
       clearProgress('quiz');
       if (user) clearQuizProgress(user.uid, 'quiz').catch(console.warn);
-      // Calculate final counts including current answer
-      const finalCorrect = chosen === currentQ.answer ? correctCount + 1 : correctCount;
-      const finalWrong = chosen !== currentQ.answer ? wrongCount + 1 : wrongCount;
       navigate('/results', {
         state: {
-          answers: [...answers, { question: currentQ, chosen, isCorrect: chosen === currentQ.answer }],
+          answers,
           mode: 'quiz',
-          summary: { correct: finalCorrect, wrong: finalWrong, total: session.length },
+          summary: { correct: correctCount, wrong: wrongCount, total: session.length },
           sectionIds: state?.selectedSections ?? null,
         }
       });
